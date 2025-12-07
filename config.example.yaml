@@ -1,0 +1,78 @@
+# go-jf-org Configuration File
+# See docs/ for detailed documentation
+
+# Source directories to scan for media files
+sources:
+  - /media/unsorted
+  - /downloads/complete
+
+# Destination directories for organized media
+destinations:
+  movies: /media/jellyfin/movies
+  tv: /media/jellyfin/tv
+  music: /media/jellyfin/music
+  books: /media/jellyfin/books
+
+# API keys for external metadata services
+# TMDB is optional but recommended for better movie/TV metadata
+api_keys:
+  tmdb: ""  # Get free API key at https://www.themoviedb.org/settings/api
+  musicbrainz_app: "go-jf-org/1.0"  # User agent for MusicBrainz requests
+  # lastfm: ""  # Optional, for music metadata
+  # google_books_api: ""  # Optional, for book metadata
+
+# Organization settings
+organize:
+  create_nfo: true              # Generate NFO files for Jellyfin
+  download_artwork: true        # Download posters, fanart, covers
+  normalize_names: true         # Clean and standardize filenames
+  preserve_quality_tags: true   # Keep quality info (1080p, 4K, etc.)
+
+# Safety settings
+safety:
+  dry_run: false                      # Preview mode - don't actually move files
+  transaction_log: true               # Log all operations for rollback
+  log_directory: ~/.go-jf-org/logs   # Where to store transaction logs
+  conflict_resolution: skip           # Options: skip, rename, interactive
+  backup_before_move: false           # Create backup copy before moving
+
+# File filters
+filters:
+  min_file_size: 10MB                 # Ignore files smaller than this
+  
+  # Supported video file extensions
+  video_extensions:
+    - .mkv
+    - .mp4
+    - .avi
+    - .m4v
+    - .ts
+    - .webm
+    - .mov
+    - .wmv
+    - .flv
+  
+  # Supported audio file extensions
+  audio_extensions:
+    - .mp3
+    - .flac
+    - .m4a
+    - .ogg
+    - .opus
+    - .wav
+    - .aac
+  
+  # Supported book file extensions
+  book_extensions:
+    - .epub
+    - .mobi
+    - .pdf
+    - .azw3
+    - .cbz
+    - .cbr
+
+# Performance settings
+performance:
+  max_concurrent_operations: 4  # Max parallel file operations
+  api_rate_limit: 40            # API requests per 10 seconds (TMDB limit)
+  cache_ttl: 24h                # How long to cache API responses

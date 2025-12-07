@@ -11,7 +11,7 @@ The target audience includes Jellyfin server administrators and home media enthu
 - **Primary Language**: Go 1.24.10
 - **CLI Framework**: Cobra v1.10.2 for command-line interface with subcommands (scan, organize, preview, verify, rollback)
 - **Configuration**: Viper v1.21.0 for YAML/ENV/flag-based configuration management with hot reload support
-- **Logging**: zerolog v1.33.0 for structured, zero-allocation JSON logging with console-friendly output
+- **Logging**: zerolog v1.34.0 for structured, zero-allocation JSON logging with console-friendly output
 - **Testing**: Go's built-in testing package with table-driven tests and subtests using `t.Run`
 - **Build/Deploy**: Makefile-based build system (`make build`, `make test`, `make lint`), binaries output to `bin/` directory
 

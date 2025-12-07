@@ -1,12 +1,12 @@
 # Project Status
 
 **Last Updated:** 2025-12-07  
-**Version:** 0.1.0-dev  
-**Status:** Planning & Foundation Phase
+**Version:** 0.2.0-dev  
+**Status:** Phase 1 (60%) + Phase 2 (40%) - Active Development
 
 ## What Has Been Delivered
 
-This repository contains a comprehensive implementation plan and initial project structure for go-jf-org, a Go CLI tool to organize disorganized media files into a Jellyfin-compatible structure.
+This repository contains a comprehensive implementation plan, project structure, and working Phase 1 + Phase 2 (partial) implementation for go-jf-org, a Go CLI tool to organize disorganized media files into a Jellyfin-compatible structure.
 
 ### ✅ Completed
 
@@ -46,38 +46,39 @@ This repository contains a comprehensive implementation plan and initial project
   └── config.example.yaml   # Example configuration
   ```
 
-#### 3. Foundation Code (20%)
-- [x] **main.go** - Basic application entry point
+#### 3. Foundation Code (60%)
+- [x] **main.go** - Application entry point
 - [x] **pkg/types/media.go** - Core type definitions
-  - MediaType enum (movie, tv, music, book)
-  - MediaFile struct
-  - Metadata structures for all media types
-  - Operation types and status
-- [x] **internal/config/config.go** - Configuration structures
-  - Config struct with all settings
-  - Default configuration
+- [x] **internal/config/config.go** - Configuration system with Viper
+- [x] **internal/scanner/scanner.go** - File system scanner with filtering
+- [x] **internal/detector/detector.go** - Media type detection (movie/TV/music/book)
+- [x] **internal/metadata/parser.go** - Filename parsing for movies and TV shows
+- [x] **cmd/root.go** - Root CLI command with logging
+- [x] **cmd/scan.go** - Scan command with metadata display
 - [x] **Makefile** - Build automation
-  - Build, test, clean, install, lint, fmt targets
 - [x] **config.example.yaml** - Example configuration file
 
 #### 4. Build System (100%)
 - [x] Makefile with all necessary targets
 - [x] Successfully builds: `make build`
 - [x] Binary runs: `./bin/go-jf-org`
+- [x] All tests pass: `make test`
 - [x] `.gitignore` properly configured
+- [x] Test coverage >80% for implemented code
 
 ### 🚧 In Progress / Not Started
 
-#### Phase 1: Foundation (10% complete)
-- [ ] CLI framework implementation (Cobra)
-- [ ] Configuration loading (Viper)
-- [ ] File system scanner
-- [ ] Logging infrastructure (zerolog)
-- [ ] Unit tests
+#### Phase 1: Foundation (60% complete)
+- [x] CLI framework implementation (Cobra)
+- [x] Configuration loading (Viper)
+- [x] File system scanner
+- [x] Logging infrastructure (zerolog)
+- [x] Unit tests for scanner and config
+- [ ] Additional CLI commands (organize, preview, verify, rollback)
 
-#### Phase 2: Metadata Extraction (0% complete)
-- [ ] Filename parsers
-- [ ] Media type detector
+#### Phase 2: Metadata Extraction (40% complete)
+- [x] Filename parsers (movies and TV shows)
+- [x] Media type detector (movies vs TV vs music vs books)
 - [ ] TMDB API client
 - [ ] MusicBrainz API client
 - [ ] OpenLibrary API client
@@ -108,17 +109,30 @@ This repository contains a comprehensive implementation plan and initial project
 ## How to Use This Repository
 
 ### For Users
-This is currently a **planning repository**. The tool is not yet functional for organizing media files.
+The tool is **partially functional** for media file scanning and type detection.
 
 **What you can do:**
+- Scan directories to identify media files
+- See detected media types (movie, TV, music, book)
+- View parsed metadata (titles, years, seasons, episodes) in verbose mode
 - Review the implementation plan
-- Provide feedback on the design
-- Star/watch the repository for updates
 
 **What you cannot do yet:**
-- Organize media files (core functionality not implemented)
-- Use any CLI commands (not yet built)
-- Configure and run the tool (only basic placeholder exists)
+- Organize media files (not yet implemented)
+- Generate NFO files (not yet implemented)
+- Rollback operations (not yet implemented)
+
+**Try it out:**
+```bash
+# Build the tool
+make build
+
+# Scan a directory
+./bin/go-jf-org scan /path/to/media
+
+# Scan with detailed metadata output
+./bin/go-jf-org scan /path/to/media -v
+```
 
 ### For Developers
 This is an excellent time to contribute!
@@ -138,20 +152,24 @@ cd go-jf-org
 # Build
 make build
 
-# Run (currently just shows version)
-./bin/go-jf-org
+# Scan a directory
+./bin/go-jf-org scan /media/unsorted -v
 
-# Make changes and test
+# Run tests
 make test
 ```
 
 ## Roadmap
 
 ### Short Term (Next 2-4 weeks)
-- [ ] Implement CLI framework (Cobra)
-- [ ] Add configuration loading (Viper)
-- [ ] Implement file system scanner
-- [ ] Add basic filename parser for movies
+- [x] ~~Implement CLI framework (Cobra)~~
+- [x] ~~Add configuration loading (Viper)~~
+- [x] ~~Implement file system scanner~~
+- [x] ~~Add basic filename parser for movies~~
+- [x] ~~Add filename parser for TV shows~~
+- [ ] Implement TMDB API integration
+- [ ] Build file organization logic
+- [ ] Add preview command (dry-run)
 
 ### Medium Term (1-2 months)
 - [ ] Complete metadata extraction for all media types
@@ -172,8 +190,8 @@ make test
 | Documentation | ✅ Excellent |
 | Architecture | ✅ Complete |
 | Code Structure | ✅ Ready |
-| Implementation | 🟡 Just Started |
-| Testing | 🔴 Not Started |
+| Implementation | 🟢 In Progress (Phase 1: 60%, Phase 2: 40%) |
+| Testing | 🟢 Good (>80% coverage for implemented code) |
 | CI/CD | 🔴 Not Started |
 
 ## Key Documents
@@ -182,10 +200,12 @@ make test
 |----------|---------|--------|
 | [README.md](README.md) | Project overview | ✅ Complete |
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Full architecture and plan | ✅ Complete |
+| [PHASE2_IMPLEMENTATION_SUMMARY.md](PHASE2_IMPLEMENTATION_SUMMARY.md) | Phase 2 detailed summary | ✅ Complete |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contributor guide | ✅ Complete |
 | [docs/jellyfin-conventions.md](docs/jellyfin-conventions.md) | Naming standards | ✅ Complete |
 | [docs/metadata-sources.md](docs/metadata-sources.md) | API documentation | ✅ Complete |
 | [docs/examples.md](docs/examples.md) | Usage examples | ✅ Complete |
+| [docs/filename-patterns.md](docs/filename-patterns.md) | Supported filename patterns | ✅ Complete |
 
 ## Questions?
 
@@ -197,25 +217,29 @@ make test
 
 The immediate next steps for development:
 
-1. **CLI Framework** (High Priority)
-   - Implement Cobra-based CLI
-   - Add basic commands: scan, organize, preview, verify
-   - Add configuration loading with Viper
+1. **Complete Phase 2: Metadata Extraction** (High Priority)
+   - Implement TMDB API client for movies/TV
+   - Add API response caching
+   - Implement rate limiting
+   - Add MusicBrainz and OpenLibrary clients
 
-2. **Scanner Implementation** (High Priority)
-   - File system traversal
-   - File type filtering
-   - Basic media detection
+2. **Phase 3: File Organization** (High Priority)
+   - Implement organize command
+   - Build Jellyfin naming convention logic
+   - Add file mover with safety checks
+   - Implement NFO file generation
+   - Add preview command (dry-run)
 
-3. **Testing Infrastructure** (High Priority)
-   - Set up test framework
-   - Create test fixtures
-   - Add CI/CD pipeline
+3. **Testing Infrastructure** (Medium Priority)
+   - Add integration tests
+   - Set up CI/CD pipeline
+   - Increase test coverage to >90%
 
-4. **Metadata Extraction** (Medium Priority)
-   - Implement filename parsers
-   - Start with movies (simplest case)
-   - Add TMDB integration
+4. **Phase 4: Safety Mechanisms** (High Priority)
+   - Transaction logging system
+   - Rollback functionality
+   - Validation checks
+   - Verify command
 
 ---
 

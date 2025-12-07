@@ -36,6 +36,7 @@ go-jf-org verify /media/jellyfin/movies
 
 ## Documentation
 
+- **[⚡ Technical Spec](TECHNICAL_SPEC.md)** - Concise technical specification (optimized for AI context)
 - **[📋 Implementation Plan](IMPLEMENTATION_PLAN.md)** - Complete architecture and development roadmap
 - **[📖 Jellyfin Conventions](docs/jellyfin-conventions.md)** - Naming standards for all media types
 - **[🔍 Metadata Sources](docs/metadata-sources.md)** - External APIs and extraction strategies

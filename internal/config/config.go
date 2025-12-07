@@ -36,35 +36,35 @@ type Destinations struct {
 
 // APIKeys contains API keys for external services
 type APIKeys struct {
-	TMDB            string `yaml:"tmdb" mapstructure:"tmdb"`
-	MusicBrainzApp  string `yaml:"musicbrainz_app" mapstructure:"musicbrainz_app"`
-	LastFM          string `yaml:"lastfm" mapstructure:"lastfm"`
-	GoogleBooksAPI  string `yaml:"google_books_api" mapstructure:"google_books_api"`
+	TMDB           string `yaml:"tmdb" mapstructure:"tmdb"`
+	MusicBrainzApp string `yaml:"musicbrainz_app" mapstructure:"musicbrainz_app"`
+	LastFM         string `yaml:"lastfm" mapstructure:"lastfm"`
+	GoogleBooksAPI string `yaml:"google_books_api" mapstructure:"google_books_api"`
 }
 
 // OrganizeSettings contains settings for file organization
 type OrganizeSettings struct {
-	CreateNFO            bool `yaml:"create_nfo" mapstructure:"create_nfo"`
-	DownloadArtwork      bool `yaml:"download_artwork" mapstructure:"download_artwork"`
-	NormalizeNames       bool `yaml:"normalize_names" mapstructure:"normalize_names"`
-	PreserveQualityTags  bool `yaml:"preserve_quality_tags" mapstructure:"preserve_quality_tags"`
+	CreateNFO           bool `yaml:"create_nfo" mapstructure:"create_nfo"`
+	DownloadArtwork     bool `yaml:"download_artwork" mapstructure:"download_artwork"`
+	NormalizeNames      bool `yaml:"normalize_names" mapstructure:"normalize_names"`
+	PreserveQualityTags bool `yaml:"preserve_quality_tags" mapstructure:"preserve_quality_tags"`
 }
 
 // SafetySettings contains safety-related settings
 type SafetySettings struct {
-	DryRun              bool   `yaml:"dry_run" mapstructure:"dry_run"`
-	TransactionLog      bool   `yaml:"transaction_log" mapstructure:"transaction_log"`
-	LogDirectory        string `yaml:"log_directory" mapstructure:"log_directory"`
-	ConflictResolution  string `yaml:"conflict_resolution" mapstructure:"conflict_resolution"` // skip, rename, interactive
-	BackupBeforeMove    bool   `yaml:"backup_before_move" mapstructure:"backup_before_move"`
+	DryRun             bool   `yaml:"dry_run" mapstructure:"dry_run"`
+	TransactionLog     bool   `yaml:"transaction_log" mapstructure:"transaction_log"`
+	LogDirectory       string `yaml:"log_directory" mapstructure:"log_directory"`
+	ConflictResolution string `yaml:"conflict_resolution" mapstructure:"conflict_resolution"` // skip, rename, interactive
+	BackupBeforeMove   bool   `yaml:"backup_before_move" mapstructure:"backup_before_move"`
 }
 
 // FilterSettings contains file filtering settings
 type FilterSettings struct {
-	MinFileSize       string   `yaml:"min_file_size" mapstructure:"min_file_size"`
-	VideoExtensions   []string `yaml:"video_extensions" mapstructure:"video_extensions"`
-	AudioExtensions   []string `yaml:"audio_extensions" mapstructure:"audio_extensions"`
-	BookExtensions    []string `yaml:"book_extensions" mapstructure:"book_extensions"`
+	MinFileSize     string   `yaml:"min_file_size" mapstructure:"min_file_size"`
+	VideoExtensions []string `yaml:"video_extensions" mapstructure:"video_extensions"`
+	AudioExtensions []string `yaml:"audio_extensions" mapstructure:"audio_extensions"`
+	BookExtensions  []string `yaml:"book_extensions" mapstructure:"book_extensions"`
 }
 
 // PerformanceSettings contains performance-related settings
@@ -78,7 +78,7 @@ type PerformanceSettings struct {
 func DefaultConfig() *Config {
 	homeDir, _ := os.UserHomeDir()
 	configDir := filepath.Join(homeDir, ".go-jf-org")
-	
+
 	return &Config{
 		Sources: []string{},
 		Destinations: Destinations{
@@ -139,7 +139,7 @@ func Load(cfgFile string) (*Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get home directory: %w", err)
 		}
-		
+
 		viper.AddConfigPath(filepath.Join(home, ".go-jf-org"))
 		viper.AddConfigPath(".")
 		viper.SetConfigName("config")
@@ -167,7 +167,7 @@ func Load(cfgFile string) (*Config, error) {
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
-	
+
 	// Apply defaults for empty slices (viper doesn't unmarshal defaults for slices properly)
 	defaults := DefaultConfig()
 	if len(cfg.Filters.VideoExtensions) == 0 {
@@ -182,7 +182,7 @@ func Load(cfgFile string) (*Config, error) {
 	if cfg.Filters.MinFileSize == "" {
 		cfg.Filters.MinFileSize = defaults.Filters.MinFileSize
 	}
-	
+
 	// Apply other defaults for empty strings
 	if cfg.Safety.LogDirectory == "" {
 		cfg.Safety.LogDirectory = defaults.Safety.LogDirectory
@@ -210,26 +210,26 @@ func Load(cfgFile string) (*Config, error) {
 // setDefaults sets default values for viper
 func setDefaults() {
 	defaults := DefaultConfig()
-	
+
 	viper.SetDefault("organize.create_nfo", defaults.Organize.CreateNFO)
 	viper.SetDefault("organize.download_artwork", defaults.Organize.DownloadArtwork)
 	viper.SetDefault("organize.normalize_names", defaults.Organize.NormalizeNames)
 	viper.SetDefault("organize.preserve_quality_tags", defaults.Organize.PreserveQualityTags)
-	
+
 	viper.SetDefault("safety.dry_run", defaults.Safety.DryRun)
 	viper.SetDefault("safety.transaction_log", defaults.Safety.TransactionLog)
 	viper.SetDefault("safety.log_directory", defaults.Safety.LogDirectory)
 	viper.SetDefault("safety.conflict_resolution", defaults.Safety.ConflictResolution)
 	viper.SetDefault("safety.backup_before_move", defaults.Safety.BackupBeforeMove)
-	
+
 	viper.SetDefault("filters.min_file_size", defaults.Filters.MinFileSize)
 	viper.SetDefault("filters.video_extensions", defaults.Filters.VideoExtensions)
 	viper.SetDefault("filters.audio_extensions", defaults.Filters.AudioExtensions)
 	viper.SetDefault("filters.book_extensions", defaults.Filters.BookExtensions)
-	
+
 	viper.SetDefault("performance.max_concurrent_operations", defaults.Performance.MaxConcurrentOps)
 	viper.SetDefault("performance.api_rate_limit", defaults.Performance.APIRateLimit)
 	viper.SetDefault("performance.cache_ttl", defaults.Performance.CacheTTL)
-	
+
 	viper.SetDefault("api_keys.musicbrainz_app", defaults.APIKeys.MusicBrainzApp)
 }

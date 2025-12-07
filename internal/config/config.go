@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -152,13 +155,14 @@ func Load(cfgFile string) (*Config, error) {
 
 	// Read config file
 	if err := viper.ReadInConfig(); err != nil {
-		// It's okay if config file doesn't exist, we'll use defaults
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			// But if it's a different error (e.g., permission denied), return it
-			// unless the file simply doesn't exist
-			if !os.IsNotExist(err) {
-				return nil, fmt.Errorf("failed to read config: %w", err)
-			}
+		// Check if it's a file not found error (config is optional)
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found in search paths, that's okay
+		} else if os.IsNotExist(err) {
+			// Specific config file not found, that's okay too
+		} else {
+			// Other errors (permission denied, parse errors) should be returned
+			return nil, fmt.Errorf("failed to read config: %w", err)
 		}
 	}
 
@@ -232,4 +236,42 @@ func setDefaults() {
 	viper.SetDefault("performance.cache_ttl", defaults.Performance.CacheTTL)
 
 	viper.SetDefault("api_keys.musicbrainz_app", defaults.APIKeys.MusicBrainzApp)
+}
+
+// ParseSize converts a size string (e.g., "10MB", "1GB") to bytes
+func ParseSize(sizeStr string) (int64, error) {
+	if sizeStr == "" {
+		return 0, fmt.Errorf("empty size string")
+	}
+
+	// Regular expression to parse size with optional unit
+	re := regexp.MustCompile(`^(\d+(?:\.\d+)?)\s*([KMGT]?B)?$`)
+	matches := re.FindStringSubmatch(strings.ToUpper(strings.TrimSpace(sizeStr)))
+
+	if matches == nil {
+		return 0, fmt.Errorf("invalid size format: %s", sizeStr)
+	}
+
+	value, err := strconv.ParseFloat(matches[1], 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid size value: %s", matches[1])
+	}
+
+	unit := matches[2]
+	var multiplier int64 = 1
+
+	switch unit {
+	case "KB":
+		multiplier = 1024
+	case "MB":
+		multiplier = 1024 * 1024
+	case "GB":
+		multiplier = 1024 * 1024 * 1024
+	case "TB":
+		multiplier = 1024 * 1024 * 1024 * 1024
+	case "B", "":
+		multiplier = 1
+	}
+
+	return int64(value * float64(multiplier)), nil
 }

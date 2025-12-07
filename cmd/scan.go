@@ -3,10 +3,13 @@ package cmd
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 
-	"github.com/opd-ai/go-jf-org/internal/scanner"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+
+	"github.com/opd-ai/go-jf-org/internal/config"
+	"github.com/opd-ai/go-jf-org/internal/scanner"
 )
 
 var scanCmd = &cobra.Command{
@@ -37,6 +40,15 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	// Create scanner with configuration
 	minSize := int64(10 * 1024 * 1024) // 10MB default
+	if cfg.Filters.MinFileSize != "" {
+		var err error
+		minSize, err = config.ParseSize(cfg.Filters.MinFileSize)
+		if err != nil {
+			log.Warn().Err(err).Str("config_value", cfg.Filters.MinFileSize).Msg("Failed to parse MinFileSize, using default")
+			minSize = 10 * 1024 * 1024
+		}
+	}
+
 	s := scanner.NewScanner(
 		cfg.Filters.VideoExtensions,
 		cfg.Filters.AudioExtensions,
@@ -70,9 +82,16 @@ func runScan(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(extMap) > 0 {
+		// Get sorted extensions for deterministic output
+		exts := make([]string, 0, len(extMap))
+		for ext := range extMap {
+			exts = append(exts, ext)
+		}
+		sort.Strings(exts)
+
 		fmt.Println("Files by extension:")
-		for ext, count := range extMap {
-			fmt.Printf("  %s: %d\n", ext, count)
+		for _, ext := range exts {
+			fmt.Printf("  %s: %d\n", ext, extMap[ext])
 		}
 		fmt.Println()
 	}

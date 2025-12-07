@@ -13,7 +13,7 @@ import (
 
 // Scanner handles file system scanning
 type Scanner struct {
-	// Extensions maps media types to their file extensions
+	// File extension lists for different media types
 	videoExtensions []string
 	audioExtensions []string
 	bookExtensions  []string
@@ -32,7 +32,9 @@ func NewScanner(videoExts, audioExts, bookExts []string, minSize int64) *Scanner
 
 // ScanResult contains the results of a scan operation
 type ScanResult struct {
+	// Files is a list of absolute paths to media files that match the scan criteria
 	Files  []string
+	// Errors is a collection of non-fatal errors encountered during the scan
 	Errors []error
 }
 
@@ -74,6 +76,7 @@ func (s *Scanner) Scan(rootPath string) (*ScanResult, error) {
 			fileInfo, err := d.Info()
 			if err != nil {
 				log.Warn().Err(err).Str("path", path).Msg("Failed to get file info")
+				result.Errors = append(result.Errors, fmt.Errorf("failed to get file info for %s: %w", path, err))
 				return nil
 			}
 

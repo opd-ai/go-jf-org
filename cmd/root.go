@@ -30,11 +30,10 @@ and safely moves files without ever deleting anything.`,
 		zerolog.TimeFieldFormat = time.RFC3339
 		if verbose {
 			zerolog.SetGlobalLevel(zerolog.DebugLevel)
-			log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 		} else {
 			zerolog.SetGlobalLevel(zerolog.InfoLevel)
-			log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 		}
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 		// Load configuration
 		var err error

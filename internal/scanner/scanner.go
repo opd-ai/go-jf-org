@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/opd-ai/go-jf-org/internal/detector"
+	"github.com/opd-ai/go-jf-org/internal/metadata"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 	"github.com/rs/zerolog/log"
 )
@@ -18,6 +20,10 @@ type Scanner struct {
 	audioExtensions []string
 	bookExtensions  []string
 	minFileSize     int64
+	// Detector for determining media type
+	detector detector.Detector
+	// Parser for extracting metadata
+	parser metadata.Parser
 }
 
 // NewScanner creates a new Scanner with the given configuration
@@ -27,6 +33,8 @@ func NewScanner(videoExts, audioExts, bookExts []string, minSize int64) *Scanner
 		audioExtensions: normalizeExtensions(audioExts),
 		bookExtensions:  normalizeExtensions(bookExts),
 		minFileSize:     minSize,
+		detector:        detector.New(),
+		parser:          metadata.NewParser(),
 	}
 }
 
@@ -110,25 +118,15 @@ func (s *Scanner) isMediaFile(path string) bool {
 		contains(s.bookExtensions, ext)
 }
 
-// GetMediaType determines the media type based on file extension
+// GetMediaType determines the media type based on file extension and filename patterns
 func (s *Scanner) GetMediaType(path string) types.MediaType {
-	ext := strings.ToLower(filepath.Ext(path))
+	return s.detector.Detect(path)
+}
 
-	if contains(s.videoExtensions, ext) {
-		// We'll need more sophisticated detection to distinguish movies from TV
-		// For now, return unknown for video files
-		return types.MediaTypeUnknown
-	}
-
-	if contains(s.audioExtensions, ext) {
-		return types.MediaTypeMusic
-	}
-
-	if contains(s.bookExtensions, ext) {
-		return types.MediaTypeBook
-	}
-
-	return types.MediaTypeUnknown
+// GetMetadata extracts metadata from a file
+func (s *Scanner) GetMetadata(path string) (*types.Metadata, error) {
+	mediaType := s.GetMediaType(path)
+	return s.parser.Parse(filepath.Base(path), mediaType)
 }
 
 // normalizeExtensions ensures all extensions start with a dot and are lowercase

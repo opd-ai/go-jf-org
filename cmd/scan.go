@@ -10,6 +10,7 @@ import (
 
 	"github.com/opd-ai/go-jf-org/internal/config"
 	"github.com/opd-ai/go-jf-org/internal/scanner"
+	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
 var scanCmd = &cobra.Command{
@@ -101,7 +102,56 @@ func runScan(cmd *cobra.Command, args []string) error {
 		fmt.Println("Files found:")
 		for _, file := range result.Files {
 			mediaType := s.GetMediaType(file)
-			fmt.Printf("  [%s] %s\n", mediaType, file)
+			metadata, err := s.GetMetadata(file)
+			
+			if err != nil {
+				fmt.Printf("  [%s] %s (error parsing metadata: %v)\n", mediaType, file, err)
+			} else {
+				// Display based on media type
+				switch mediaType {
+				case types.MediaTypeMovie:
+					fmt.Printf("  [movie] %s\n", file)
+					if metadata.Title != "" {
+						fmt.Printf("          Title: %s", metadata.Title)
+						if metadata.Year > 0 {
+							fmt.Printf(" (%d)", metadata.Year)
+						}
+						fmt.Println()
+					}
+					if metadata.Quality != "" || metadata.Source != "" || metadata.Codec != "" {
+						fmt.Printf("          ")
+						if metadata.Quality != "" {
+							fmt.Printf("Quality: %s  ", metadata.Quality)
+						}
+						if metadata.Source != "" {
+							fmt.Printf("Source: %s  ", metadata.Source)
+						}
+						if metadata.Codec != "" {
+							fmt.Printf("Codec: %s", metadata.Codec)
+						}
+						fmt.Println()
+					}
+				case types.MediaTypeTV:
+					fmt.Printf("  [tv] %s\n", file)
+					if metadata.TVMetadata != nil {
+						if metadata.TVMetadata.ShowTitle != "" {
+							fmt.Printf("          Show: %s  ", metadata.TVMetadata.ShowTitle)
+						}
+						if metadata.TVMetadata.Season > 0 || metadata.TVMetadata.Episode > 0 {
+							fmt.Printf("S%02dE%02d", metadata.TVMetadata.Season, metadata.TVMetadata.Episode)
+						}
+						if metadata.TVMetadata.EpisodeTitle != "" {
+							fmt.Printf("  %s", metadata.TVMetadata.EpisodeTitle)
+						}
+						fmt.Println()
+					}
+				default:
+					fmt.Printf("  [%s] %s\n", mediaType, file)
+					if metadata.Title != "" {
+						fmt.Printf("          Title: %s\n", metadata.Title)
+					}
+				}
+			}
 		}
 		fmt.Println()
 	}

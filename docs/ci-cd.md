@@ -41,19 +41,7 @@ Runs on every push and pull request to `main` and `develop` branches.
   - Build binaries for all platforms
   - Upload artifacts for download
 
-### 2. Coverage Workflow (`.github/workflows/coverage.yml`)
-
-Generates detailed coverage reports and comments on PRs.
-
-**Actions:**
-- Run tests with coverage
-- Generate HTML coverage report
-- Calculate coverage percentage
-- Upload reports as artifacts
-- Comment coverage percentage on PRs
-- Upload to Codecov
-
-### 3. Release Workflow (`.github/workflows/release.yml`)
+### 2. Release Workflow (`.github/workflows/release.yml`)
 
 Triggered when a version tag (e.g., `v1.0.0`) is pushed.
 
@@ -77,12 +65,9 @@ The project uses golangci-lint with the following enabled linters:
 - `errcheck` - Checks for unchecked errors
 - `gosimple` - Simplifies code
 - `govet` - Standard Go vet checks
+- `ineffassign` - Detects ineffectual assignments
 - `staticcheck` - Advanced static analysis
 - `unused` - Detects unused code
-
-### Formatting
-- `gofmt` - Standard Go formatting
-- `goimports` - Import statement formatting
 - `misspell` - Spell checking
 
 ### Best Practices
@@ -90,15 +75,6 @@ The project uses golangci-lint with the following enabled linters:
 - `gosec` - Security-focused checks
 - `bodyclose` - HTTP response body closure
 - `noctx` - Context usage in HTTP requests
-- `goconst` - Repeated string constants
-- `gocritic` - Comprehensive Go linter
-- `gocyclo` - Cyclomatic complexity (max 15)
-
-### Code Duplication
-- `dupl` - Code clone detection (100 token threshold)
-
-### Performance
-- `prealloc` - Slice pre-allocation opportunities
 - `unconvert` - Unnecessary type conversions
 
 See `.golangci.yml` for full configuration.

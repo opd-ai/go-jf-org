@@ -89,10 +89,11 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
       run: |
         BINARY_NAME=go-jf-org
+        OUTPUT_NAME="${BINARY_NAME}-${GOOS}-${GOARCH}"
         if [ "$GOOS" = "windows" ]; then
-          BINARY_NAME="${BINARY_NAME}.exe"
+          OUTPUT_NAME="${OUTPUT_NAME}.exe"
         fi
-        go build -v -o bin/${BINARY_NAME}-${GOOS}-${GOARCH} .
+        go build -v -o bin/${OUTPUT_NAME} .
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

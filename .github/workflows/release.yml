@@ -46,10 +46,6 @@ jobs:
         
         # Windows amd64
         GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/go-jf-org-windows-amd64.exe .
-        
-        # Create checksums
-        cd dist
-        sha256sum * > checksums.txt
 
     - name: Create compressed archives
       run: |
@@ -69,6 +65,9 @@ jobs:
         
         # Windows amd64
         zip go-jf-org-windows-amd64.zip go-jf-org-windows-amd64.exe
+        
+        # Create checksums for archives
+        sha256sum *.tar.gz *.zip > checksums.txt
 
     - name: Generate changelog
       id: changelog

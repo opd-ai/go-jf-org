@@ -133,7 +133,7 @@ issues:
       linters:
         - noctx
 
-    # Ignore min() redefinition (can be removed when min Go version is 1.21)
+    # Ignore min() redefinition (Go 1.21+ has built-in min, but may be needed for compatibility)
     - path: internal/api/tmdb/rate_limiter.go
       linters:
         - revive

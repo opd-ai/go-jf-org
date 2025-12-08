@@ -275,8 +275,7 @@ make coverage  # Generate coverage report
 
 The project uses the following workflows:
 
-- **CI** (`.github/workflows/ci.yml`) - Runs tests, linting, and builds
-- **Coverage** (`.github/workflows/coverage.yml`) - Generates coverage reports
+- **CI** (`.github/workflows/ci.yml`) - Runs tests, linting, builds, and coverage reporting
 - **Release** (`.github/workflows/release.yml`) - Automated releases on tags
 
 ### Release Process

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 
@@ -13,11 +14,13 @@ import (
 	"github.com/opd-ai/go-jf-org/internal/api/tmdb"
 	"github.com/opd-ai/go-jf-org/internal/config"
 	"github.com/opd-ai/go-jf-org/internal/scanner"
+	"github.com/opd-ai/go-jf-org/internal/util"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
 var (
 	enrichScan bool
+	jsonOutput bool
 )
 
 var scanCmd = &cobra.Command{
@@ -35,6 +38,7 @@ and reports what it finds. Use --enrich to fetch metadata from external APIs
 func init() {
 	rootCmd.AddCommand(scanCmd)
 	scanCmd.Flags().BoolVar(&enrichScan, "enrich", false, "Enrich metadata using external APIs (TMDB, MusicBrainz, OpenLibrary)")
+	scanCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output statistics in JSON format")
 }
 
 func runScan(cmd *cobra.Command, args []string) error {
@@ -47,6 +51,9 @@ func runScan(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Info().Str("path", absPath).Msg("Starting scan")
+
+	// Create statistics tracker
+	stats := util.NewStatistics()
 
 	// Create scanner with configuration
 	minSize := int64(10 * 1024 * 1024) // 10MB default
@@ -106,11 +113,21 @@ func runScan(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Perform scan
+	// Perform scan with progress tracking
+	if !jsonOutput {
+		fmt.Printf("Scanning %s...\n", absPath)
+	}
+	
+	scanTimer := stats.NewTimer("scan")
 	result, err := s.Scan(absPath)
+	scanTimer.Stop()
+	
 	if err != nil {
 		return fmt.Errorf("scan failed: %w", err)
 	}
+	
+	stats.Add("files_found", len(result.Files))
+	stats.Add("errors", len(result.Errors))
 
 	// Display results
 	fmt.Println()
@@ -148,10 +165,19 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	// List all files if verbose
 	if verbose {
+		// Set up progress tracking for metadata enrichment
+		var progress *util.ProgressTracker
+		if enrichScan && !jsonOutput {
+			progress = util.NewProgressTracker(len(result.Files), "Enriching metadata")
+			defer progress.Finish()
+		}
+		
 		fmt.Println("Files found:")
 		for _, file := range result.Files {
 			mediaType := s.GetMediaType(file)
 			metadata, err := s.GetMetadata(file)
+			
+			stats.Increment("files_processed")
 
 			if err != nil {
 				fmt.Printf("  [%s] %s (error parsing metadata: %v)\n", mediaType, file, err)
@@ -160,32 +186,51 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 			// Enrich metadata if enrichers are available
 			if metadata != nil {
+				enrichTimer := stats.NewTimer("enrichment")
 				switch mediaType {
 				case types.MediaTypeMovie:
 					if tmdbEnricher != nil {
 						if err := tmdbEnricher.EnrichMovie(metadata); err != nil {
 							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich movie metadata")
+							stats.Increment("enrichment_failures")
+						} else {
+							stats.Increment("enrichment_success")
 						}
 					}
 				case types.MediaTypeTV:
 					if tmdbEnricher != nil {
 						if err := tmdbEnricher.EnrichTVShow(metadata); err != nil {
 							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich TV metadata")
+							stats.Increment("enrichment_failures")
+						} else {
+							stats.Increment("enrichment_success")
 						}
 					}
 				case types.MediaTypeMusic:
 					if mbEnricher != nil {
 						if err := mbEnricher.EnrichMusic(metadata); err != nil {
 							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich music metadata")
+							stats.Increment("enrichment_failures")
+						} else {
+							stats.Increment("enrichment_success")
 						}
 					}
 				case types.MediaTypeBook:
 					if olEnricher != nil {
 						if err := olEnricher.EnrichBook(metadata); err != nil {
 							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich book metadata")
+							stats.Increment("enrichment_failures")
+						} else {
+							stats.Increment("enrichment_success")
 						}
 					}
 				}
+				enrichTimer.Stop()
+			}
+			
+			// Update progress if tracking
+			if progress != nil {
+				progress.Increment()
 			}
 
 			// Display based on media type
@@ -309,6 +354,30 @@ func runScan(cmd *cobra.Command, args []string) error {
 		fmt.Println("Errors:")
 		for _, err := range result.Errors {
 			fmt.Printf("  %v\n", err)
+		}
+	}
+
+	// Finalize and display statistics
+	stats.Finish()
+	
+	if jsonOutput {
+		// Output JSON statistics
+		jsonStr, err := stats.ToJSON()
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to generate JSON statistics")
+		} else {
+			fmt.Fprintln(os.Stdout, jsonStr)
+		}
+	} else if !verbose {
+		// Show summary statistics for non-verbose mode
+		fmt.Println()
+		fmt.Printf("Scan completed in %s\n", formatDurationHelper(stats.Duration))
+		if enrichScan {
+			enrichSuccess := stats.Get("enrichment_success")
+			enrichFailed := stats.Get("enrichment_failures")
+			if enrichSuccess > 0 || enrichFailed > 0 {
+				fmt.Printf("Enrichment: %d successful, %d failed\n", enrichSuccess, enrichFailed)
+			}
 		}
 	}
 

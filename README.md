@@ -161,7 +161,16 @@ go-jf-org organize /media/unsorted --interactive
 ### Verify Structure
 ```bash
 # Check if structure is Jellyfin-compatible
-go-jf-org verify /media/jellyfin/movies --strict
+go-jf-org verify /media/jellyfin/movies --type movie
+
+# Verify TV shows with strict mode (exit code 1 if issues found)
+go-jf-org verify /media/jellyfin/tv --type tv --strict
+
+# Verify all media types
+go-jf-org verify /media/jellyfin
+
+# Get JSON output for scripting
+go-jf-org verify /media/jellyfin/movies --json
 ```
 
 ### Rollback

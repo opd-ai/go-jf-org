@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+        cache: true
+
+    - name: Run tests
+      run: go test -v ./...
+
+    - name: Build multi-platform binaries
+      run: |
+        # Create build directory
+        mkdir -p dist
+        
+        # Linux amd64
+        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/go-jf-org-linux-amd64 .
+        
+        # Linux arm64
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/go-jf-org-linux-arm64 .
+        
+        # macOS amd64
+        GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/go-jf-org-darwin-amd64 .
+        
+        # macOS arm64 (Apple Silicon)
+        GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/go-jf-org-darwin-arm64 .
+        
+        # Windows amd64
+        GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/go-jf-org-windows-amd64.exe .
+        
+        # Create checksums
+        cd dist
+        sha256sum * > checksums.txt
+
+    - name: Create compressed archives
+      run: |
+        cd dist
+        
+        # Linux amd64
+        tar -czf go-jf-org-linux-amd64.tar.gz go-jf-org-linux-amd64
+        
+        # Linux arm64
+        tar -czf go-jf-org-linux-arm64.tar.gz go-jf-org-linux-arm64
+        
+        # macOS amd64
+        tar -czf go-jf-org-darwin-amd64.tar.gz go-jf-org-darwin-amd64
+        
+        # macOS arm64
+        tar -czf go-jf-org-darwin-arm64.tar.gz go-jf-org-darwin-arm64
+        
+        # Windows amd64
+        zip go-jf-org-windows-amd64.zip go-jf-org-windows-amd64.exe
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Get previous tag
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        # Generate changelog
+        if [ -z "$PREVIOUS_TAG" ]; then
+          echo "## Changes" > changelog.md
+          git log --pretty=format:"- %s (%h)" >> changelog.md
+        else
+          echo "## Changes since $PREVIOUS_TAG" > changelog.md
+          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" >> changelog.md
+        fi
+        
+        # Set output for release notes
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        cat changelog.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        body: ${{ steps.changelog.outputs.changelog }}
+        files: |
+          dist/*.tar.gz
+          dist/*.zip
+          dist/checksums.txt
+        draft: false
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

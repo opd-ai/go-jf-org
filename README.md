@@ -4,6 +4,10 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.21+-blue.svg)](https://golang.org)
+[![CI](https://github.com/opd-ai/go-jf-org/workflows/CI/badge.svg)](https://github.com/opd-ai/go-jf-org/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/opd-ai/go-jf-org/branch/main/graph/badge.svg)](https://codecov.io/gh/opd-ai/go-jf-org)
+[![Go Report Card](https://goreportcard.com/badge/github.com/opd-ai/go-jf-org)](https://goreportcard.com/report/github.com/opd-ai/go-jf-org)
+[![Release](https://img.shields.io/github/v/release/opd-ai/go-jf-org)](https://github.com/opd-ai/go-jf-org/releases/latest)
 
 ## Overview
 

@@ -240,7 +240,61 @@ Check coverage:
 ```bash
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
+
+# Or use the Makefile target
+make coverage
 ```
+
+## CI/CD Pipeline
+
+### Automated Checks
+
+Every pull request triggers automated CI/CD pipelines:
+
+1. **Test Suite** - Runs on Linux, macOS, and Windows with multiple Go versions
+2. **Linting** - Code quality checks with golangci-lint
+3. **Build** - Multi-platform builds (Linux, macOS, Windows on amd64/arm64)
+4. **Coverage** - Code coverage reporting and tracking
+
+### Running CI Checks Locally
+
+Before pushing, run the same checks that CI will run:
+
+```bash
+# Run all CI checks
+make ci
+
+# Individual checks
+make test      # Run tests
+make lint      # Run linter
+make build     # Build binary
+make coverage  # Generate coverage report
+```
+
+### GitHub Actions Workflows
+
+The project uses the following workflows:
+
+- **CI** (`.github/workflows/ci.yml`) - Runs tests, linting, builds, and coverage reporting
+- **Release** (`.github/workflows/release.yml`) - Automated releases on tags
+
+### Release Process
+
+Releases are automated via GitHub Actions:
+
+1. Update version in `main.go`
+2. Commit and push changes
+3. Create and push a version tag:
+   ```bash
+   git tag -a v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+   ```
+4. GitHub Actions automatically:
+   - Runs full test suite
+   - Builds multi-platform binaries
+   - Creates compressed archives
+   - Generates checksums
+   - Creates GitHub release with artifacts
 
 ## Pull Request Process
 

@@ -1,13 +1,14 @@
 # Makefile for go-jf-org
 
-.PHONY: all build test clean install lint fmt help
+.PHONY: all build test clean install lint fmt help coverage build-all release
 
 # Binary name
 BINARY_NAME=go-jf-org
-VERSION=0.1.0-dev
+VERSION=0.8.0-dev
 
 # Build directory
 BUILD_DIR=bin
+DIST_DIR=dist
 
 # Go parameters
 GOCMD=go
@@ -18,25 +19,35 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 GOFMT=$(GOCMD) fmt
 
+# Build flags
+LDFLAGS=-ldflags="-s -w -X main.version=$(VERSION)"
+
 all: test build
 
 ## build: Build the binary
 build:
 	@echo "Building $(BINARY_NAME)..."
 	@mkdir -p $(BUILD_DIR)
-	$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) -v .
+	$(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) -v .
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
 ## test: Run tests
 test:
 	@echo "Running tests..."
-	$(GOTEST) -v ./...
+	$(GOTEST) -v -race -coverprofile=coverage.out ./...
+
+## coverage: Generate coverage report
+coverage: test
+	@echo "Generating coverage report..."
+	$(GOCMD) tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+	@$(GOCMD) tool cover -func=coverage.out | grep total
 
 ## clean: Clean build artifacts
 clean:
 	@echo "Cleaning..."
 	$(GOCLEAN)
-	@rm -rf $(BUILD_DIR)
+	@rm -rf $(BUILD_DIR) $(DIST_DIR) coverage.out coverage.html
 	@echo "Clean complete"
 
 ## install: Install the binary to $GOPATH/bin
@@ -76,3 +87,41 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@grep -E '^## ' Makefile | sed 's/## /  /'
+
+## build-all: Build for all platforms
+build-all:
+	@echo "Building for all platforms..."
+	@mkdir -p $(DIST_DIR)
+	
+	@echo "Building Linux amd64..."
+	@GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-amd64 .
+	
+	@echo "Building Linux arm64..."
+	@GOOS=linux GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-arm64 .
+	
+	@echo "Building macOS amd64..."
+	@GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64 .
+	
+	@echo "Building macOS arm64..."
+	@GOOS=darwin GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64 .
+	
+	@echo "Building Windows amd64..."
+	@GOOS=windows GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-amd64.exe .
+	
+	@echo "Build complete for all platforms in $(DIST_DIR)/"
+
+## release: Create release archives
+release: build-all
+	@echo "Creating release archives..."
+	@cd $(DIST_DIR) && \
+		tar -czf $(BINARY_NAME)-linux-amd64.tar.gz $(BINARY_NAME)-linux-amd64 && \
+		tar -czf $(BINARY_NAME)-linux-arm64.tar.gz $(BINARY_NAME)-linux-arm64 && \
+		tar -czf $(BINARY_NAME)-darwin-amd64.tar.gz $(BINARY_NAME)-darwin-amd64 && \
+		tar -czf $(BINARY_NAME)-darwin-arm64.tar.gz $(BINARY_NAME)-darwin-arm64 && \
+		zip -q $(BINARY_NAME)-windows-amd64.zip $(BINARY_NAME)-windows-amd64.exe && \
+		sha256sum *.tar.gz *.zip > checksums.txt
+	@echo "Release archives created in $(DIST_DIR)/"
+
+## ci: Run CI checks (test, lint, build)
+ci: test lint build
+	@echo "✓ All CI checks passed"

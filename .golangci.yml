@@ -1,0 +1,151 @@
+run:
+  timeout: 5m
+  tests: true
+  issues-exit-code: 1
+
+linters:
+  enable:
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code
+    - govet         # Vet examines Go source code
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Staticcheck is a go vet on steroids
+    - unused        # Check for unused code
+    - misspell      # Finds commonly misspelled English words
+    - revive        # Fast, configurable, extensible, flexible linter
+    - gosec         # Security-focused linter
+    - bodyclose     # Checks whether HTTP response body is closed
+    - noctx         # Finds sending http request without context.Context
+    - unconvert     # Remove unnecessary type conversions
+  disable:
+    - gofmt         # Disabled to avoid formatting issues in existing code
+    - goimports     # Disabled to avoid import formatting issues
+    - goconst       # Disabled - too many false positives
+    - gocritic      # Disabled - too strict for existing code
+    - gocyclo       # Disabled - handled by separate complexity check
+    - dupl          # Disabled - too many false positives
+    - prealloc      # Disabled - optimization can be done later
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    enable-all: true
+    disable:
+      - shadow      # Too many false positives
+      - fieldalignment  # Not critical for existing code
+
+  revive:
+    severity: warning
+    confidence: 0.8
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  misspell:
+    locale: US
+
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104  # Allow unhandled errors in some cases (already covered by errcheck)
+      - G306  # File permissions 0644 acceptable for non-sensitive files
+      - G115  # Integer overflow conversions acceptable with validation
+
+issues:
+  exclude-dirs:
+    - bin
+    - dist
+  exclude-files:
+    - ".*_test\\.go$"
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+
+    # Allow main and init functions to be complex
+    - path: main\.go
+      linters:
+        - revive
+        - unused
+
+    # Ignore unused parameters in interface implementations
+    - linters:
+        - revive
+      text: "unused-parameter"
+
+    # Ignore errcheck in organizer for transaction methods (logged elsewhere)
+    - path: internal/organizer/
+      linters:
+        - errcheck
+      text: "Error return value of `o.transactionMgr"
+
+    # Ignore errcheck for home/cwd in rollback (best effort display)
+    - path: internal/safety/rollback.go
+      linters:
+        - errcheck
+      text: "(os.UserHomeDir|os.Getwd)"
+
+    # Ignore errcheck for UserHomeDir in config (has fallback)
+    - path: internal/config/config.go
+      linters:
+        - errcheck
+      text: "os.UserHomeDir"
+
+    # Ignore empty blocks in config (intentional error handling)
+    - path: internal/config/config.go
+      linters:
+        - revive
+      text: "empty-block"
+
+    # Ignore gosimple suggestions for clarity
+    - linters:
+        - gosimple
+      text: "(S1011|S1009)"
+
+    # Ignore noctx for existing API clients (can be fixed in future)
+    - path: internal/api/
+      linters:
+        - noctx
+
+    # Ignore min() redefinition (Go 1.21+ has built-in min, but may be needed for compatibility)
+    - path: internal/api/tmdb/rate_limiter.go
+      linters:
+        - revive
+      text: "redefines-builtin-id"
+
+    # Ignore indent-error-flow for clarity in complex error handling
+    - linters:
+        - revive
+      text: "indent-error-flow"
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+output:
+  sort-results: true

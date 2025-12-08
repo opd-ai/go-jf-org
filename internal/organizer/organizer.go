@@ -262,7 +262,8 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 		// Log operation before executing
 		txnIndex := len(txn.Operations)
 		o.transactionMgr.AddOperation(txn, op)
-		operationIndices[len(operations)] = txnIndex
+		currentOpIndex := len(operations)  // Save the index BEFORE adding any operations
+		operationIndices[currentOpIndex] = txnIndex
 
 		// Create destination directory
 		destDir := filepath.Dir(plan.DestinationPath)
@@ -300,12 +301,10 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 			}
 		}
 
-		operations = append(operations, op)
+		// Update operation status in transaction using saved index
+		o.transactionMgr.UpdateOperation(txn, txnIndex, op)
 		
-		// Update operation status in transaction
-		if idx, ok := operationIndices[len(operations)-1]; ok {
-			o.transactionMgr.UpdateOperation(txn, idx, op)
-		}
+		operations = append(operations, op)
 	}
 
 	// Complete or fail transaction

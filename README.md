@@ -148,8 +148,11 @@ go-jf-org preview /media/unsorted
 # Organize all media types
 go-jf-org organize /media/unsorted
 
-# Organize only movies
-go-jf-org organize /media/unsorted --type movie
+# Organize with NFO file generation
+go-jf-org organize /media/unsorted --create-nfo
+
+# Organize only movies with NFO files
+go-jf-org organize /media/unsorted --type movie --create-nfo
 
 # Interactive mode for ambiguous files
 go-jf-org organize /media/unsorted --interactive

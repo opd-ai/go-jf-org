@@ -9,6 +9,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	// MinMusicYear is the earliest valid year for recorded music
+	MinMusicYear = 1900
+	// MaxMusicYear is the latest valid year (future releases)
+	MaxMusicYear = 2100
+)
+
 // Enricher enriches metadata using MusicBrainz API
 type Enricher struct {
 	client *Client
@@ -171,7 +178,7 @@ func (e *Enricher) extractYear(dateStr string) int {
 	parts := strings.Split(dateStr, "-")
 	if len(parts) > 0 {
 		year, err := strconv.Atoi(parts[0])
-		if err == nil && year >= 1900 && year <= 2100 {
+		if err == nil && year >= MinMusicYear && year <= MaxMusicYear {
 			return year
 		}
 	}

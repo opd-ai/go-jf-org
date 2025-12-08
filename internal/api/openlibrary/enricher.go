@@ -5,8 +5,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/opd-ai/go-jf-org/internal/util"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 	"github.com/rs/zerolog/log"
+)
+
+const (
+	// MinBookYear is the earliest valid publication year for books (Gutenberg Bible)
+	MinBookYear = 1450
+	// MaxBookYear is the latest valid publication year (future publications)
+	MaxBookYear = 2100
 )
 
 // Enricher enriches metadata using OpenLibrary API
@@ -223,7 +231,13 @@ func (e *Enricher) applyBookDetails(metadata *types.Metadata, details *BookDetai
 
 	log.Debug().
 		Str("title", metadata.Title).
-		Str("description", metadata.BookMetadata.Description[:min(50, len(metadata.BookMetadata.Description))]).
+		Str("description", func() string {
+			descLen := len(metadata.BookMetadata.Description)
+			if descLen == 0 {
+				return ""
+			}
+			return metadata.BookMetadata.Description[:util.Min(50, descLen)]
+		}()).
 		Msg("Applied OpenLibrary book details")
 }
 
@@ -264,7 +278,7 @@ func (e *Enricher) extractYear(dateStr string) int {
 		
 		// Try to parse as integer
 		year, err := strconv.Atoi(part)
-		if err == nil && year >= 1450 && year <= 2100 {
+		if err == nil && year >= MinBookYear && year <= MaxBookYear {
 			return year
 		}
 	}
@@ -273,18 +287,10 @@ func (e *Enricher) extractYear(dateStr string) int {
 	parts = strings.Split(dateStr, "-")
 	if len(parts) > 0 {
 		year, err := strconv.Atoi(parts[0])
-		if err == nil && year >= 1450 && year <= 2100 {
+		if err == nil && year >= MinBookYear && year <= MaxBookYear {
 			return year
 		}
 	}
 
 	return 0
-}
-
-// min returns the minimum of two integers
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

@@ -3,6 +3,8 @@ package musicbrainz
 import (
 	"sync"
 	"time"
+	
+	"github.com/opd-ai/go-jf-org/internal/util"
 )
 
 // RateLimiter implements a token bucket rate limiter for MusicBrainz API
@@ -86,7 +88,7 @@ func (rl *RateLimiter) refillTokens() {
 		intervals := int(elapsed / rl.interval)
 		tokensToAdd := intervals * rl.refill
 
-		rl.tokens = min(rl.capacity, rl.tokens+tokensToAdd)
+		rl.tokens = util.Min(rl.capacity, rl.tokens+tokensToAdd)
 		rl.lastRefill = rl.lastRefill.Add(time.Duration(intervals) * rl.interval)
 	}
 }
@@ -98,12 +100,4 @@ func (rl *RateLimiter) Available() int {
 
 	rl.refillTokens()
 	return rl.tokens
-}
-
-// min returns the minimum of two integers
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

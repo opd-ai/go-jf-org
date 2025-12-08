@@ -3,7 +3,6 @@ package jellyfin
 import (
 	"encoding/xml"
 	"fmt"
-	"strings"
 
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
@@ -92,7 +91,6 @@ func (g *NFOGenerator) GenerateMovieNFO(metadata *types.Metadata) (string, error
 		nfo.Plot = mm.Plot
 		nfo.TMDBID = mm.TMDBID
 		nfo.IMDBID = mm.IMDBID
-		nfo.Studio = strings.Join(mm.Genres, ", ")
 		
 		for _, genre := range mm.Genres {
 			nfo.Genres = append(nfo.Genres, genre)

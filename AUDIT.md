@@ -78,7 +78,7 @@ func (s *Spinner) Stop() {
 **File:** internal/organizer/organizer.go:93-97  
 **Severity:** High  
 **Status:** ✅ Resolved  
-**Fixed:** 2025-12-08 (commit: pending)  
+**Fixed:** 2025-12-08 (commit: 9f55b4d)  
 **Resolution:** Added defensive nil check after error handling to protect against future parser changes that might return (nil, error).
 
 ### Description
@@ -117,7 +117,9 @@ if err != nil {
 **ID:** BUG-EDGE-001  
 **File:** internal/metadata/movie_parser.go:34-38, internal/detector/movie.go:24  
 **Severity:** Low  
-**Status:** Unresolved
+**Status:** ✅ Resolved  
+**Fixed:** 2025-12-08 (commit: pending)  
+**Resolution:** Extended year regex from hard-coded `2100` to `21\d{2}`, supporting years 2100-2199.
 
 ### Description
 Year regex patterns use `(18[5-9]\d|19\d{2}|20\d{2}|2100)` which matches exactly to year 2100, but any movie from 2101+ will not be detected. This is a hard-coded upper boundary that will cause issues after year 2100.
@@ -267,8 +269,15 @@ README claims "planning phase" but codebase is at v0.8.0-dev with extensive impl
 
 ## Resolution Log
 
-### 2025-12-08 - BUG-NIL-001 Fixed
+### 2025-12-08 - BUG-EDGE-001 Fixed
 **Commit:** (pending)  
+**Bug:** Year Pattern Match Boundary at 2100  
+**Root Cause:** Year regex pattern used hard-coded `2100` literal instead of `21\d{2}`, limiting matching to exactly year 2100. Any year >= 2101 would fail to match.  
+**Fix:** Changed regex from `(18[5-9]\d|19\d{2}|20\d{2}|2100)` to `(18[5-9]\d|19\d{2}|20\d{2}|21\d{2})` in both movie_parser.go and movie.go. Now supports years 1850-2199 (covers next 175 years).  
+**Verification:** Manual regex testing confirms years 2101-2199 now match correctly. All existing tests pass.
+
+### 2025-12-08 - BUG-NIL-001 Fixed
+**Commit:** 9f55b4d  
 **Bug:** Potential Nil Pointer Dereference in Metadata Parsing  
 **Root Cause:** While current parsers always return non-nil metadata, the code didn't check for nil before using the metadata object. This created a fragile dependency on parser implementation details.  
 **Fix:** Added defensive nil check after error handling: `if meta == nil { log.Warn()...; continue }`. This guards against future parser modifications that might return (nil, error).  

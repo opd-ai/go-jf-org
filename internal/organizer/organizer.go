@@ -19,7 +19,9 @@ type Organizer struct {
 	detector          detector.Detector
 	parser            metadata.Parser
 	naming            *jellyfin.Naming
+	nfoGenerator      *jellyfin.NFOGenerator
 	dryRun            bool
+	createNFO         bool
 	transactionMgr    *safety.TransactionManager
 	enableTransactions bool
 }
@@ -30,7 +32,9 @@ func NewOrganizer(dryRun bool) *Organizer {
 		detector:           detector.New(),
 		parser:             metadata.NewParser(),
 		naming:             jellyfin.NewNaming(),
+		nfoGenerator:       jellyfin.NewNFOGenerator(),
 		dryRun:             dryRun,
+		createNFO:          false,
 		enableTransactions: false,
 	}
 }
@@ -41,10 +45,17 @@ func NewOrganizerWithTransactions(dryRun bool, tm *safety.TransactionManager) *O
 		detector:           detector.New(),
 		parser:             metadata.NewParser(),
 		naming:             jellyfin.NewNaming(),
+		nfoGenerator:       jellyfin.NewNFOGenerator(),
 		dryRun:             dryRun,
+		createNFO:          false,
 		transactionMgr:     tm,
 		enableTransactions: tm != nil,
 	}
+}
+
+// SetCreateNFO enables or disables NFO file creation
+func (o *Organizer) SetCreateNFO(create bool) {
+	o.createNFO = create
 }
 
 // Plan represents a planned organization operation
@@ -174,6 +185,14 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 		} else {
 			op.Status = types.OperationStatusCompleted
 			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("File moved successfully")
+			
+			// Create NFO files after successful move
+			nfoOps, err := o.createNFOFiles(plan)
+			if err != nil {
+				log.Warn().Err(err).Str("file", plan.DestinationPath).Msg("Failed to create NFO files")
+			} else if len(nfoOps) > 0 {
+				operations = append(operations, nfoOps...)
+			}
 		}
 
 		operations = append(operations, op)
@@ -268,6 +287,17 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 		} else {
 			op.Status = types.OperationStatusCompleted
 			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("File moved successfully")
+			
+			// Create NFO files after successful move
+			nfoOps, err := o.createNFOFiles(plan)
+			if err != nil {
+				log.Warn().Err(err).Str("file", plan.DestinationPath).Msg("Failed to create NFO files")
+			} else if len(nfoOps) > 0 {
+				for _, nfoOp := range nfoOps {
+					o.transactionMgr.AddOperation(txn, nfoOp)
+					operations = append(operations, nfoOp)
+				}
+			}
 		}
 
 		operations = append(operations, op)
@@ -308,6 +338,124 @@ func findAvailableName(path string) (string, error) {
 
 	// If we somehow exhaust 1000 tries, return error
 	return "", fmt.Errorf("could not find available filename after 1000 attempts for %s", path)
+}
+
+// createNFOFiles creates NFO files for the media based on type and metadata
+func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
+	if !o.createNFO {
+		return nil, nil
+	}
+
+	operations := make([]types.Operation, 0)
+	destDir := filepath.Dir(plan.DestinationPath)
+
+	switch plan.MediaType {
+	case types.MediaTypeMovie:
+		// Create movie.nfo in the movie directory
+		nfoPath := filepath.Join(destDir, "movie.nfo")
+		content, err := o.nfoGenerator.GenerateMovieNFO(plan.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate movie NFO: %w", err)
+		}
+
+		op := types.Operation{
+			Type:        types.OperationCreateFile,
+			Source:      "",
+			Destination: nfoPath,
+			Status:      types.OperationStatusPending,
+		}
+
+		if !o.dryRun {
+			if err := os.WriteFile(nfoPath, []byte(content), 0644); err != nil {
+				op.Status = types.OperationStatusFailed
+				op.Error = fmt.Errorf("failed to write NFO file: %w", err)
+			} else {
+				op.Status = types.OperationStatusCompleted
+				log.Info().Str("path", nfoPath).Msg("Created movie NFO file")
+			}
+		} else {
+			op.Status = types.OperationStatusCompleted
+			log.Info().Str("path", nfoPath).Msg("[DRY-RUN] Would create movie NFO file")
+		}
+
+		operations = append(operations, op)
+
+	case types.MediaTypeTV:
+		if plan.Metadata.TVMetadata == nil {
+			return nil, nil
+		}
+
+		tv := plan.Metadata.TVMetadata
+		
+		// Create tvshow.nfo in the show directory (parent of season directory)
+		showDir := filepath.Dir(destDir)
+		tvshowNFOPath := filepath.Join(showDir, "tvshow.nfo")
+		
+		// Only create tvshow.nfo if it doesn't exist (multiple episodes share same show)
+		if _, err := os.Stat(tvshowNFOPath); os.IsNotExist(err) {
+			content, err := o.nfoGenerator.GenerateTVShowNFO(plan.Metadata)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate TV show NFO: %w", err)
+			}
+
+			op := types.Operation{
+				Type:        types.OperationCreateFile,
+				Source:      "",
+				Destination: tvshowNFOPath,
+				Status:      types.OperationStatusPending,
+			}
+
+			if !o.dryRun {
+				if err := os.WriteFile(tvshowNFOPath, []byte(content), 0644); err != nil {
+					op.Status = types.OperationStatusFailed
+					op.Error = fmt.Errorf("failed to write tvshow NFO: %w", err)
+				} else {
+					op.Status = types.OperationStatusCompleted
+					log.Info().Str("path", tvshowNFOPath).Msg("Created tvshow NFO file")
+				}
+			} else {
+				op.Status = types.OperationStatusCompleted
+				log.Info().Str("path", tvshowNFOPath).Msg("[DRY-RUN] Would create tvshow NFO file")
+			}
+
+			operations = append(operations, op)
+		}
+
+		// Create season.nfo in the season directory
+		seasonNFOPath := filepath.Join(destDir, "season.nfo")
+		
+		// Only create season.nfo if it doesn't exist (multiple episodes share same season)
+		if _, err := os.Stat(seasonNFOPath); os.IsNotExist(err) {
+			content, err := o.nfoGenerator.GenerateSeasonNFO(tv.Season)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate season NFO: %w", err)
+			}
+
+			op := types.Operation{
+				Type:        types.OperationCreateFile,
+				Source:      "",
+				Destination: seasonNFOPath,
+				Status:      types.OperationStatusPending,
+			}
+
+			if !o.dryRun {
+				if err := os.WriteFile(seasonNFOPath, []byte(content), 0644); err != nil {
+					op.Status = types.OperationStatusFailed
+					op.Error = fmt.Errorf("failed to write season NFO: %w", err)
+				} else {
+					op.Status = types.OperationStatusCompleted
+					log.Info().Str("path", seasonNFOPath).Msg("Created season NFO file")
+				}
+			} else {
+				op.Status = types.OperationStatusCompleted
+				log.Info().Str("path", seasonNFOPath).Msg("[DRY-RUN] Would create season NFO file")
+			}
+
+			operations = append(operations, op)
+		}
+	}
+
+	return operations, nil
 }
 
 // ValidatePlan checks if a plan can be executed safely

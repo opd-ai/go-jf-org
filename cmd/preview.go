@@ -15,6 +15,7 @@ var (
 	previewDest       string
 	previewMediaType  string
 	previewConflictStrategy string
+	previewCreateNFO  bool
 )
 
 var previewCmd = &cobra.Command{
@@ -35,6 +36,7 @@ func init() {
 	previewCmd.Flags().StringVarP(&previewDest, "dest", "d", "", "destination root directory (default from config)")
 	previewCmd.Flags().StringVarP(&previewMediaType, "type", "t", "", "filter by media type (movie, tv, music, book)")
 	previewCmd.Flags().StringVar(&previewConflictStrategy, "conflict", "skip", "conflict resolution strategy (skip, rename)")
+	previewCmd.Flags().BoolVar(&previewCreateNFO, "create-nfo", false, "preview NFO file creation")
 }
 
 func runPreview(cmd *cobra.Command, args []string) error {
@@ -76,6 +78,7 @@ func runPreview(cmd *cobra.Command, args []string) error {
 
 	// Create organizer in dry-run mode
 	org := organizer.NewOrganizer(true)
+	org.SetCreateNFO(previewCreateNFO)
 
 	// Plan organization
 	plans, err := org.PlanOrganization(result.Files, destRoot, mediaTypeFilter)

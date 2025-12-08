@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/opd-ai/go-jf-org/internal/detector"
@@ -83,10 +84,10 @@ func (wp *WorkerPool) ScanConcurrent(ctx context.Context, rootPath string, exten
 	wg.Wait()
 	close(resultChan)
 	
-	// Wait for result collector
+	// Wait for result collector (ensures all appends are complete before returning)
 	resultWg.Wait()
 	
-	return paths, sizes, nil
+	return paths, sizes, nil // Safe: all appends completed
 }
 
 // worker processes files from the path channel
@@ -167,7 +168,8 @@ func (wp *WorkerPool) walkDirectory(ctx context.Context, rootPath string, pathCh
 		}
 		
 		// Skip hidden files and directories
-		if info.Name()[0] == '.' && path != rootPath {
+		name := info.Name()
+		if len(name) > 0 && name[0] == '.' && path != rootPath {
 			if info.IsDir() {
 				return filepath.SkipDir
 			}
@@ -193,7 +195,7 @@ func (wp *WorkerPool) walkDirectory(ctx context.Context, rootPath string, pathCh
 
 // containsExtension checks if an extension is in the list (case-insensitive)
 func containsExtension(ext string, extensions []string) bool {
-	extLower := filepath.Ext(ext)
+	extLower := strings.ToLower(ext)
 	for _, e := range extensions {
 		if extLower == e {
 			return true

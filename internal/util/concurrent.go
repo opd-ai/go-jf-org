@@ -38,7 +38,7 @@ func NewConcurrentEnricher(numWorkers int) *ConcurrentEnricher {
 // Results are returned in the same order as the input
 func (ce *ConcurrentEnricher) EnrichBatch(ctx context.Context, metadataList []*types.Metadata, enricher EnricherFunc) ([]*types.Metadata, []error) {
 	if len(metadataList) == 0 {
-		return metadataList, nil
+		return metadataList, make([]error, 0)
 	}
 
 	// Create channels
@@ -58,7 +58,7 @@ func (ce *ConcurrentEnricher) EnrichBatch(ctx context.Context, metadataList []*t
 			select {
 			case jobChan <- i:
 			case <-ctx.Done():
-				break
+				return
 			}
 		}
 		close(jobChan)
@@ -116,7 +116,7 @@ func (ce *ConcurrentEnricher) worker(ctx context.Context, wg *sync.WaitGroup, jo
 // EnrichWithProgress enriches a batch of metadata with progress tracking
 func (ce *ConcurrentEnricher) EnrichWithProgress(ctx context.Context, metadataList []*types.Metadata, enricher EnricherFunc, progress *ProgressTracker) ([]*types.Metadata, []error) {
 	if len(metadataList) == 0 {
-		return metadataList, nil
+		return metadataList, make([]error, 0)
 	}
 
 	// Set total if progress tracker provided
@@ -141,7 +141,7 @@ func (ce *ConcurrentEnricher) EnrichWithProgress(ctx context.Context, metadataLi
 			select {
 			case jobChan <- i:
 			case <-ctx.Done():
-				break
+				return
 			}
 		}
 		close(jobChan)

@@ -310,8 +310,9 @@ func FormatBytes(bytes int64) string {
 		exp++
 	}
 	
-	units := []string{"KB", "MB", "GB", "TB", "PB"}
-	// Bounds check to prevent panic
+	// Extended to support larger units (EB, ZB, YB)
+	units := []string{"KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"}
+	// Bounds check to prevent panic - caps at YB (yottabyte)
 	if exp >= len(units) {
 		exp = len(units) - 1
 	}

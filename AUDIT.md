@@ -118,7 +118,7 @@ if err != nil {
 **File:** internal/metadata/movie_parser.go:34-38, internal/detector/movie.go:24  
 **Severity:** Low  
 **Status:** ✅ Resolved  
-**Fixed:** 2025-12-08 (commit: pending)  
+**Fixed:** 2025-12-08 (commit: f2fbf5e)  
 **Resolution:** Extended year regex from hard-coded `2100` to `21\d{2}`, supporting years 2100-2199.
 
 ### Description
@@ -154,7 +154,9 @@ yearPattern: regexp.MustCompile(`[\[\(._\s](18[5-9]\d|19\d{2}|20\d{2}|2100)[\]\)
 **ID:** BUG-EDGE-002  
 **File:** internal/util/stats.go:301-319  
 **Severity:** Low  
-**Status:** Unresolved
+**Status:** ✅ Resolved  
+**Fixed:** 2025-12-08 (commit: pending)  
+**Resolution:** Extended units array to include EB, ZB, and YB, supporting sizes up to yottabytes.
 
 ### Description
 FormatBytes() function has a bounds check at line 316-318 to prevent index out of bounds panic when bytes >= 1024^6 (Petabytes), but it artificially limits the output to "PB" even for larger values like Exabytes or Zettabytes, reducing accuracy for very large files.
@@ -269,8 +271,15 @@ README claims "planning phase" but codebase is at v0.8.0-dev with extensive impl
 
 ## Resolution Log
 
-### 2025-12-08 - BUG-EDGE-001 Fixed
+### 2025-12-08 - BUG-EDGE-002 Fixed
 **Commit:** (pending)  
+**Bug:** FormatBytes Bounds Check Prevents Panic but Limits Accuracy  
+**Root Cause:** Units array only included up to PB (petabyte). When handling larger values (EB+), the exp index was capped at 4, causing 1 EB to display as "1024.00 PB" instead of "1.00 EB".  
+**Fix:** Extended units array from `[]string{"KB", "MB", "GB", "TB", "PB"}` to include `"EB", "ZB", "YB"` (exabyte, zettabyte, yottabyte). Now supports accurate formatting up to yottabytes (1024^8 bytes).  
+**Verification:** Manual testing confirms 1 EB displays as "1.00 EB", 1.5 EB as "1.50 EB". All stats tests pass.
+
+### 2025-12-08 - BUG-EDGE-001 Fixed
+**Commit:** f2fbf5e  
 **Bug:** Year Pattern Match Boundary at 2100  
 **Root Cause:** Year regex pattern used hard-coded `2100` literal instead of `21\d{2}`, limiting matching to exactly year 2100. Any year >= 2101 would fail to match.  
 **Fix:** Changed regex from `(18[5-9]\d|19\d{2}|20\d{2}|2100)` to `(18[5-9]\d|19\d{2}|20\d{2}|21\d{2})` in both movie_parser.go and movie.go. Now supports years 1850-2199 (covers next 175 years).  

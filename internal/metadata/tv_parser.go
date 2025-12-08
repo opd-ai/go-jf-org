@@ -3,8 +3,8 @@ package metadata
 import (
 	"regexp"
 	"strconv"
-	"strings"
 
+	"github.com/opd-ai/go-jf-org/internal/util"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
@@ -40,7 +40,7 @@ func (t *tvParser) Parse(filename string) (*types.Metadata, error) {
 		TVMetadata: &types.TVMetadata{},
 	}
 
-	name := removeExtension(filename)
+	name := util.RemoveExtension(filename)
 
 	// Extract season and episode numbers
 	var season, episode int
@@ -75,11 +75,7 @@ func (t *tvParser) Parse(filename string) (*types.Metadata, error) {
 	// Extract show name (everything before the season/episode pattern)
 	showMatches := t.showNamePattern.FindStringSubmatch(name)
 	if len(showMatches) >= 2 {
-		showName := showMatches[1]
-		// Clean up show name
-		showName = strings.ReplaceAll(showName, ".", " ")
-		showName = strings.ReplaceAll(showName, "_", " ")
-		showName = strings.TrimSpace(showName)
+		showName := util.CleanTitle(showMatches[1])
 		metadata.TVMetadata.ShowTitle = showName
 		metadata.Title = showName
 	}
@@ -89,10 +85,7 @@ func (t *tvParser) Parse(filename string) (*types.Metadata, error) {
 	episodeTitlePattern := regexp.MustCompile(`(?i)S?\d{1,4}[xE]\d{1,4}[\.\s-]+(.+?)[\.\s-]+(?:\d{3,4}p|BluRay|WEB|HDTV|x26[45])`)
 	episodeMatches := episodeTitlePattern.FindStringSubmatch(name)
 	if len(episodeMatches) >= 2 {
-		episodeTitle := episodeMatches[1]
-		episodeTitle = strings.ReplaceAll(episodeTitle, ".", " ")
-		episodeTitle = strings.ReplaceAll(episodeTitle, "_", " ")
-		episodeTitle = strings.TrimSpace(episodeTitle)
+		episodeTitle := util.CleanTitle(episodeMatches[1])
 		metadata.TVMetadata.EpisodeTitle = episodeTitle
 	}
 

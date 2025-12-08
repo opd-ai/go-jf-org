@@ -3,6 +3,8 @@ package detector
 import (
 	"regexp"
 	"strings"
+
+	"github.com/opd-ai/go-jf-org/internal/util"
 )
 
 // MovieDetector detects if a video file is a movie
@@ -26,7 +28,7 @@ func NewMovieDetector() MovieDetector {
 // IsMovie returns true if the filename appears to be a movie
 func (m *movieDetector) IsMovie(filename string) bool {
 	// Remove extension for analysis
-	name := removeExtension(filename)
+	name := util.RemoveExtension(filename)
 	name = strings.ToLower(name)
 
 	// If it has a year pattern, it's likely a movie
@@ -55,13 +57,4 @@ func (m *movieDetector) IsMovie(filename string) bool {
 
 	// If no specific indicators, we can't definitively say it's a movie
 	return false
-}
-
-// removeExtension removes the file extension
-func removeExtension(filename string) string {
-	idx := strings.LastIndex(filename, ".")
-	if idx > 0 {
-		return filename[:idx]
-	}
-	return filename
 }

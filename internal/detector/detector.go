@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/opd-ai/go-jf-org/internal/util"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
@@ -82,31 +83,13 @@ var bookExtensions = []string{
 }
 
 func isVideoExtension(ext string) bool {
-	ext = strings.ToLower(ext)
-	for _, v := range videoExtensions {
-		if v == ext {
-			return true
-		}
-	}
-	return false
+	return util.ContainsExtension(videoExtensions, ext)
 }
 
 func isAudioExtension(ext string) bool {
-	ext = strings.ToLower(ext)
-	for _, a := range audioExtensions {
-		if a == ext {
-			return true
-		}
-	}
-	return false
+	return util.ContainsExtension(audioExtensions, ext)
 }
 
 func isBookExtension(ext string) bool {
-	ext = strings.ToLower(ext)
-	for _, b := range bookExtensions {
-		if b == ext {
-			return true
-		}
-	}
-	return false
+	return util.ContainsExtension(bookExtensions, ext)
 }

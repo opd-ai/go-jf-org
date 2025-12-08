@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/opd-ai/go-jf-org/internal/util"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
@@ -45,16 +46,13 @@ func (m *movieParser) Parse(filename string) (*types.Metadata, error) {
 	}
 
 	// Remove extension
-	name := removeExtension(filename)
+	name := util.RemoveExtension(filename)
 
 	// Extract title and year
 	matches := m.titleYearPattern.FindStringSubmatch(name)
 	if len(matches) >= 3 {
 		// Clean up title - replace dots and underscores with spaces
-		title := matches[1]
-		title = strings.ReplaceAll(title, ".", " ")
-		title = strings.ReplaceAll(title, "_", " ")
-		title = strings.TrimSpace(title)
+		title := util.CleanTitle(matches[1])
 		metadata.Title = title
 
 		// Parse year
@@ -74,11 +72,7 @@ func (m *movieParser) Parse(filename string) (*types.Metadata, error) {
 
 		// Use filename as title if no better option
 		if metadata.Title == "" {
-			title := name
-			title = strings.ReplaceAll(title, ".", " ")
-			title = strings.ReplaceAll(title, "_", " ")
-			title = strings.TrimSpace(title)
-			metadata.Title = title
+			metadata.Title = util.CleanTitle(name)
 		}
 	}
 
@@ -98,13 +92,4 @@ func (m *movieParser) Parse(filename string) (*types.Metadata, error) {
 	}
 
 	return metadata, nil
-}
-
-// removeExtension removes file extension from filename
-func removeExtension(filename string) string {
-	idx := strings.LastIndex(filename, ".")
-	if idx > 0 {
-		return filename[:idx]
-	}
-	return filename
 }

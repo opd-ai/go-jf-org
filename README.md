@@ -92,7 +92,12 @@ go-jf-org verify /media/jellyfin/movies
 git clone https://github.com/opd-ai/go-jf-org.git
 cd go-jf-org
 make build
-sudo make install
+sudo make install  # Installs to /usr/local/bin
+```
+
+You can customize the installation directory:
+```bash
+make install PREFIX=/custom/path  # Installs to /custom/path/bin
 ```
 
 ### Using Go

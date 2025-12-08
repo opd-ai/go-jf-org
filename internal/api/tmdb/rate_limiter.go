@@ -50,13 +50,25 @@ func (rl *RateLimiter) Allow() bool {
 }
 
 // Wait blocks until a token is available, then consumes it
+// Calculates optimal wait time instead of busy-waiting
 func (rl *RateLimiter) Wait() {
 	for {
 		if rl.Allow() {
 			return
 		}
-		// Sleep briefly and try again
-		time.Sleep(100 * time.Millisecond)
+		
+		// Calculate time until next refill
+		rl.mu.Lock()
+		timeSinceRefill := time.Since(rl.lastRefill)
+		timeUntilRefill := rl.interval - timeSinceRefill
+		rl.mu.Unlock()
+		
+		// Wait for next refill or minimum time
+		if timeUntilRefill > 0 {
+			time.Sleep(timeUntilRefill)
+		} else {
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 }
 

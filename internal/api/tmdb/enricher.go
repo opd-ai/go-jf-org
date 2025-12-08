@@ -2,6 +2,7 @@ package tmdb
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/opd-ai/go-jf-org/pkg/types"
@@ -151,9 +152,8 @@ func (e *Enricher) applyMovieSearchResult(metadata *types.Metadata, movie *Movie
 	if metadata.Year == 0 && movie.ReleaseDate != "" {
 		parts := strings.Split(movie.ReleaseDate, "-")
 		if len(parts) > 0 {
-			var year int
-			fmt.Sscanf(parts[0], "%d", &year)
-			if year > 0 {
+			year, err := strconv.Atoi(parts[0])
+			if err == nil && year > 0 {
 				metadata.Year = year
 			}
 		}
@@ -185,9 +185,8 @@ func (e *Enricher) applyMovieDetails(metadata *types.Metadata, details *MovieDet
 	if details.ReleaseDate != "" {
 		parts := strings.Split(details.ReleaseDate, "-")
 		if len(parts) > 0 {
-			var year int
-			fmt.Sscanf(parts[0], "%d", &year)
-			if year > 0 && metadata.Year == 0 {
+			year, err := strconv.Atoi(parts[0])
+			if err == nil && year > 0 && metadata.Year == 0 {
 				metadata.Year = year
 			}
 		}
@@ -224,9 +223,8 @@ func (e *Enricher) applyTVSearchResult(metadata *types.Metadata, show *TVResult)
 	if show.FirstAirDate != "" {
 		parts := strings.Split(show.FirstAirDate, "-")
 		if len(parts) > 0 {
-			var year int
-			fmt.Sscanf(parts[0], "%d", &year)
-			if year > 0 && metadata.Year == 0 {
+			year, err := strconv.Atoi(parts[0])
+			if err == nil && year > 0 && metadata.Year == 0 {
 				metadata.Year = year
 			}
 		}
@@ -253,9 +251,8 @@ func (e *Enricher) applyTVDetails(metadata *types.Metadata, details *TVDetails) 
 	if details.FirstAirDate != "" {
 		parts := strings.Split(details.FirstAirDate, "-")
 		if len(parts) > 0 {
-			var year int
-			fmt.Sscanf(parts[0], "%d", &year)
-			if year > 0 && metadata.Year == 0 {
+			year, err := strconv.Atoi(parts[0])
+			if err == nil && year > 0 && metadata.Year == 0 {
 				metadata.Year = year
 			}
 		}

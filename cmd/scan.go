@@ -8,9 +8,14 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
+	"github.com/opd-ai/go-jf-org/internal/api/tmdb"
 	"github.com/opd-ai/go-jf-org/internal/config"
 	"github.com/opd-ai/go-jf-org/internal/scanner"
 	"github.com/opd-ai/go-jf-org/pkg/types"
+)
+
+var (
+	enrichScan bool
 )
 
 var scanCmd = &cobra.Command{
@@ -19,13 +24,14 @@ var scanCmd = &cobra.Command{
 	Long: `Scan scans the specified directory (and subdirectories) for media files.
 
 It identifies video, audio, and book files based on their extensions
-and reports what it finds.`,
+and reports what it finds. Use --enrich to fetch metadata from TMDB.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runScan,
 }
 
 func init() {
 	rootCmd.AddCommand(scanCmd)
+	scanCmd.Flags().BoolVar(&enrichScan, "enrich", false, "Enrich metadata using TMDB API (requires API key)")
 }
 
 func runScan(cmd *cobra.Command, args []string) error {
@@ -56,6 +62,24 @@ func runScan(cmd *cobra.Command, args []string) error {
 		cfg.Filters.BookExtensions,
 		minSize,
 	)
+
+	// Set up enricher if requested
+	var enricher *tmdb.Enricher
+	if enrichScan {
+		if cfg.APIKeys.TMDB == "" {
+			log.Warn().Msg("TMDB API key not configured, skipping enrichment. Set api_keys.tmdb in config.")
+		} else {
+			client, err := tmdb.NewClient(tmdb.Config{
+				APIKey: cfg.APIKeys.TMDB,
+			})
+			if err != nil {
+				log.Warn().Err(err).Msg("Failed to create TMDB client, skipping enrichment")
+			} else {
+				enricher = tmdb.NewEnricher(client)
+				log.Info().Msg("TMDB enrichment enabled")
+			}
+		}
+	}
 
 	// Perform scan
 	result, err := s.Scan(absPath)
@@ -106,50 +130,87 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 			if err != nil {
 				fmt.Printf("  [%s] %s (error parsing metadata: %v)\n", mediaType, file, err)
-			} else {
-				// Display based on media type
+				continue
+			}
+
+			// Enrich metadata if enricher is available
+			if enricher != nil && metadata != nil {
 				switch mediaType {
 				case types.MediaTypeMovie:
-					fmt.Printf("  [movie] %s\n", file)
-					if metadata.Title != "" {
-						fmt.Printf("          Title: %s", metadata.Title)
-						if metadata.Year > 0 {
-							fmt.Printf(" (%d)", metadata.Year)
-						}
-						fmt.Println()
-					}
-					if metadata.Quality != "" || metadata.Source != "" || metadata.Codec != "" {
-						fmt.Printf("          ")
-						if metadata.Quality != "" {
-							fmt.Printf("Quality: %s  ", metadata.Quality)
-						}
-						if metadata.Source != "" {
-							fmt.Printf("Source: %s  ", metadata.Source)
-						}
-						if metadata.Codec != "" {
-							fmt.Printf("Codec: %s", metadata.Codec)
-						}
-						fmt.Println()
+					if err := enricher.EnrichMovie(metadata); err != nil {
+						log.Debug().Err(err).Str("file", file).Msg("Failed to enrich movie metadata")
 					}
 				case types.MediaTypeTV:
-					fmt.Printf("  [tv] %s\n", file)
-					if metadata.TVMetadata != nil {
-						if metadata.TVMetadata.ShowTitle != "" {
-							fmt.Printf("          Show: %s  ", metadata.TVMetadata.ShowTitle)
-						}
-						if metadata.TVMetadata.Season > 0 || metadata.TVMetadata.Episode > 0 {
-							fmt.Printf("S%02dE%02d", metadata.TVMetadata.Season, metadata.TVMetadata.Episode)
-						}
-						if metadata.TVMetadata.EpisodeTitle != "" {
-							fmt.Printf("  %s", metadata.TVMetadata.EpisodeTitle)
-						}
-						fmt.Println()
+					if err := enricher.EnrichTVShow(metadata); err != nil {
+						log.Debug().Err(err).Str("file", file).Msg("Failed to enrich TV metadata")
 					}
-				default:
-					fmt.Printf("  [%s] %s\n", mediaType, file)
-					if metadata.Title != "" {
-						fmt.Printf("          Title: %s\n", metadata.Title)
+				}
+			}
+
+			// Display based on media type
+			switch mediaType {
+			case types.MediaTypeMovie:
+				fmt.Printf("  [movie] %s\n", file)
+				if metadata.Title != "" {
+					fmt.Printf("          Title: %s", metadata.Title)
+					if metadata.Year > 0 {
+						fmt.Printf(" (%d)", metadata.Year)
 					}
+					fmt.Println()
+				}
+				if metadata.Quality != "" || metadata.Source != "" || metadata.Codec != "" {
+					fmt.Printf("          ")
+					if metadata.Quality != "" {
+						fmt.Printf("Quality: %s  ", metadata.Quality)
+					}
+					if metadata.Source != "" {
+						fmt.Printf("Source: %s  ", metadata.Source)
+					}
+					if metadata.Codec != "" {
+						fmt.Printf("Codec: %s", metadata.Codec)
+					}
+					fmt.Println()
+				}
+				// Show enriched data if available
+				if metadata.MovieMetadata != nil {
+					if metadata.MovieMetadata.Plot != "" {
+						fmt.Printf("          Plot: %s\n", truncate(metadata.MovieMetadata.Plot, 100))
+					}
+					if metadata.MovieMetadata.Rating > 0 {
+						fmt.Printf("          Rating: %.1f/10\n", metadata.MovieMetadata.Rating)
+					}
+					if len(metadata.MovieMetadata.Genres) > 0 {
+						fmt.Printf("          Genres: %v\n", metadata.MovieMetadata.Genres)
+					}
+				}
+			case types.MediaTypeTV:
+				fmt.Printf("  [tv] %s\n", file)
+				if metadata.TVMetadata != nil {
+					if metadata.TVMetadata.ShowTitle != "" {
+						fmt.Printf("          Show: %s  ", metadata.TVMetadata.ShowTitle)
+					}
+					if metadata.TVMetadata.Season > 0 || metadata.TVMetadata.Episode > 0 {
+						fmt.Printf("S%02dE%02d", metadata.TVMetadata.Season, metadata.TVMetadata.Episode)
+					}
+					if metadata.TVMetadata.EpisodeTitle != "" {
+						fmt.Printf("  %s", metadata.TVMetadata.EpisodeTitle)
+					}
+					fmt.Println()
+					// Show enriched data if available
+					if metadata.TVMetadata.Plot != "" {
+						fmt.Printf("          Plot: %s\n", truncate(metadata.TVMetadata.Plot, 100))
+					}
+					if metadata.TVMetadata.Rating > 0 {
+						fmt.Printf("          Rating: %.1f/10\n", metadata.TVMetadata.Rating)
+					}
+					if len(metadata.TVMetadata.Genres) > 0 {
+						fmt.Printf("          Genres: %v\n", metadata.TVMetadata.Genres)
+					}
+				}
+			default:
+				fmt.Printf("  [%s] %s\n", mediaType, file)
+				if metadata.Title != "" {
+					fmt.Printf("          Title: %s\n", metadata.Title)
 				}
 			}
 		}
@@ -165,4 +226,12 @@ func runScan(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// truncate truncates a string to maxLen characters, adding "..." if truncated
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
 }

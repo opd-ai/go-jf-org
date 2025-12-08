@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/opd-ai/go-jf-org/internal/scanner"
 	"github.com/opd-ai/go-jf-org/pkg/types"
@@ -60,3 +63,38 @@ func createScanner() *scanner.Scanner {
 		minFileSize,
 	)
 }
+
+// promptConflictResolution prompts the user for how to handle a conflict
+// Returns: "skip", "rename", or "overwrite"
+func promptConflictResolution(sourcePath, destPath string) string {
+	fmt.Println()
+	fmt.Printf("⚠️  Conflict detected:\n")
+	fmt.Printf("   Source:      %s\n", sourcePath)
+	fmt.Printf("   Destination: %s (already exists)\n", destPath)
+	fmt.Println()
+	fmt.Println("How would you like to resolve this conflict?")
+	fmt.Println("  [s] Skip - Leave original file, don't move (default)")
+	fmt.Println("  [r] Rename - Add suffix to filename (e.g., file-1.mkv)")
+	fmt.Println("  [o] Overwrite - Replace existing file")
+	fmt.Println("  [a] Skip all - Skip this and all remaining conflicts")
+	fmt.Print("\nYour choice [s/r/o/a]: ")
+	
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return "skip"
+	}
+	
+	choice := strings.ToLower(strings.TrimSpace(input))
+	switch choice {
+	case "r", "rename":
+		return "rename"
+	case "o", "overwrite":
+		return "overwrite"
+	case "a", "all", "skipall", "skip-all":
+		return "skip-all"
+	default:
+		return "skip"
+	}
+}
+

@@ -161,6 +161,22 @@ func TestMovieDetector_IsMovie(t *testing.T) {
 			filename: "Movie.1799.mkv",
 			want:     false,
 		},
+		// Test years beyond 2100 (BUG-EDGE-001 fix validation)
+		{
+			name:     "movie with year 2101",
+			filename: "Future.2101.mkv",
+			want:     true,
+		},
+		{
+			name:     "movie with year 2150",
+			filename: "SciFi.Movie.2150.1080p.mkv",
+			want:     true,
+		},
+		{
+			name:     "movie with year 2199",
+			filename: "Final.Film.2199.mkv",
+			want:     true,
+		},
 	}
 
 	detector := NewMovieDetector()

@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -268,6 +269,31 @@ func TestSpinner_MultipleStartStop(t *testing.T) {
 	s.Stop()
 	s.Stop()
 	s.Stop()
+}
+
+// TestSpinner_ConcurrentStop tests that concurrent calls to Stop() don't panic
+// This validates the fix for BUG-RACE-001
+func TestSpinner_ConcurrentStop(t *testing.T) {
+	s := NewSpinner("Testing")
+	s.SetEnabled(false) // Disable output for test
+	s.Start()
+	time.Sleep(50 * time.Millisecond)
+
+	// Call Stop() from multiple goroutines concurrently
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s.Stop() // Should not panic due to sync.Once protection
+		}()
+	}
+	wg.Wait()
+
+	// Verify spinner is stopped
+	if s.running {
+		t.Error("expected spinner to be stopped")
+	}
 }
 
 func TestFormatDuration(t *testing.T) {

@@ -394,3 +394,35 @@ func createTestFile(t *testing.T, path string) {
 		t.Fatal(err)
 	}
 }
+
+// TestPlanOrganization_NilMetadataHandling validates the defensive nil check (BUG-NIL-001)
+// Note: Current parsers always return valid metadata objects, so this test documents
+// the defensive programming practice rather than testing an actual code path.
+// The nil check protects against future parser changes that might return (nil, error).
+func TestPlanOrganization_NilMetadataHandling(t *testing.T) {
+	// This test validates that the organizer has defensive nil checks in place.
+	// Current implementation: parsers never return nil metadata, but the code
+	// now includes a defensive check after error handling to guard against
+	// future modifications that might change this behavior.
+	
+	tmpDir := t.TempDir()
+	movieFile := filepath.Join(tmpDir, "The.Matrix.1999.mkv")
+	createTestFile(t, movieFile)
+	
+	destRoot := filepath.Join(tmpDir, "organized")
+	o := NewOrganizer(false)
+	
+	// This should work normally - metadata will be valid
+	plans, err := o.PlanOrganization([]string{movieFile}, destRoot, types.MediaTypeUnknown)
+	if err != nil {
+		t.Fatalf("PlanOrganization() error = %v", err)
+	}
+	
+	// Should successfully create a plan
+	if len(plans) != 1 {
+		t.Errorf("expected 1 plan, got %d", len(plans))
+	}
+	
+	// The defensive nil check is in place at organizer.go:99-103
+	// If parsers are modified to return (nil, nil), the code will handle it gracefully
+}

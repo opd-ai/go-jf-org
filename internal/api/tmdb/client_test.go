@@ -422,12 +422,6 @@ func TestAPIErrorHandling(t *testing.T) {
 }
 
 func TestCacheWithRealDirectory(t *testing.T) {
-	// Test that cache works with default directory
-	home, err := os.UserHomeDir()
-	if err != nil {
-		t.Skip("Cannot get home directory")
-	}
-
 	tmpCacheDir := t.TempDir()
 	
 	cache, err := NewCache(tmpCacheDir)
@@ -450,6 +444,4 @@ func TestCacheWithRealDirectory(t *testing.T) {
 	if !found {
 		t.Error("Get() cache miss after Set()")
 	}
-	
-	_ = home // Use the variable to avoid unused error
 }

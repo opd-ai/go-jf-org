@@ -53,12 +53,16 @@ func (rl *RateLimiter) Allow() bool {
 // Calculates optimal wait time instead of busy-waiting
 func (rl *RateLimiter) Wait() {
 	for {
-		if rl.Allow() {
+		rl.mu.Lock()
+		rl.refillTokens()
+		
+		if rl.tokens > 0 {
+			rl.tokens--
+			rl.mu.Unlock()
 			return
 		}
 		
-		// Calculate time until next refill
-		rl.mu.Lock()
+		// Calculate time until next refill while holding the lock
 		timeSinceRefill := time.Since(rl.lastRefill)
 		timeUntilRefill := rl.interval - timeSinceRefill
 		rl.mu.Unlock()

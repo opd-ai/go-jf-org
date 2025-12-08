@@ -57,7 +57,9 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 	if time.Now().After(expiresAt) {
 		log.Debug().Str("key", key).Msg("Cache entry expired")
 		// Remove expired cache file
-		os.Remove(filename)
+		if err := os.Remove(filename); err != nil {
+			log.Warn().Err(err).Str("file", filename).Msg("Failed to remove expired cache file")
+		}
 		return nil, false
 	}
 

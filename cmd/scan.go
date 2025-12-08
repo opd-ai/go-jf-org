@@ -230,6 +230,9 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 // truncate truncates a string to maxLen characters, adding "..." if truncated
 func truncate(s string, maxLen int) string {
+	if maxLen < 3 {
+		maxLen = 3
+	}
 	if len(s) <= maxLen {
 		return s
 	}

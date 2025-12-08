@@ -91,7 +91,7 @@ func (c *Client) get(endpoint string, params url.Values) ([]byte, error) {
 	c.rateLimiter.Wait()
 
 	// Make HTTP request
-	log.Debug().Str("url", apiURL).Msg("Making TMDB API request")
+	log.Debug().Str("endpoint", endpoint).Msg("Making TMDB API request")
 	resp, err := c.httpClient.Get(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
@@ -116,7 +116,9 @@ func (c *Client) get(endpoint string, params url.Values) ([]byte, error) {
 	// Cache successful response
 	var data interface{}
 	if err := json.Unmarshal(body, &data); err == nil {
-		c.cache.Set(cacheKey, data, CacheTTLSuccess)
+		if err := c.cache.Set(cacheKey, data, CacheTTLSuccess); err != nil {
+			log.Warn().Err(err).Str("endpoint", endpoint).Msg("Failed to cache TMDB response")
+		}
 	}
 
 	return body, nil

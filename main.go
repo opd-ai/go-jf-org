@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const version = "0.1.0-dev"
+const version = "0.7.0-dev"
 
 func main() {
 	if err := cmd.Execute(); err != nil {

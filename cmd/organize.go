@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/rs/zerolog/log"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/opd-ai/go-jf-org/internal/organizer"
 	"github.com/opd-ai/go-jf-org/internal/safety"
+	"github.com/opd-ai/go-jf-org/internal/util"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
@@ -19,6 +21,7 @@ var (
 	organizeDryRun          bool
 	organizeNoTransaction   bool
 	organizeCreateNFO       bool
+	organizeJSONOutput      bool
 )
 
 var organizeCmd = &cobra.Command{
@@ -52,6 +55,7 @@ func init() {
 	organizeCmd.Flags().BoolVar(&organizeDryRun, "dry-run", false, "preview changes without executing")
 	organizeCmd.Flags().BoolVar(&organizeNoTransaction, "no-transaction", false, "disable transaction logging (not recommended)")
 	organizeCmd.Flags().BoolVar(&organizeCreateNFO, "create-nfo", false, "create Jellyfin-compatible NFO metadata files")
+	organizeCmd.Flags().BoolVar(&organizeJSONOutput, "json", false, "output statistics in JSON format")
 }
 
 func runOrganize(cmd *cobra.Command, args []string) error {
@@ -75,7 +79,7 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if organizeDryRun {
+	if organizeDryRun && !organizeJSONOutput {
 		fmt.Println("⚠ DRY-RUN MODE: No files will be moved")
 		fmt.Println()
 	}
@@ -86,15 +90,34 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 		Bool("dry_run", organizeDryRun).
 		Msg("Starting organization")
 
+	// Create statistics tracker
+	stats := util.NewStatistics()
+
 	// Create scanner
 	s := createScanner()
 
-	// Scan for files
-	fmt.Printf("Scanning %s...\n", absPath)
+	// Scan for files with progress
+	if !organizeJSONOutput {
+		fmt.Printf("Scanning %s...\n", absPath)
+	}
+	scanSpinner := util.NewSpinner("Scanning for media files")
+	if !organizeJSONOutput {
+		scanSpinner.Start()
+	}
+	
+	scanTimer := stats.NewTimer("scan")
 	result, err := s.Scan(absPath)
+	scanTimer.Stop()
+	
+	if !organizeJSONOutput {
+		scanSpinner.Stop()
+	}
+	
 	if err != nil {
 		return fmt.Errorf("scan failed: %w", err)
 	}
+	
+	stats.Add("files_scanned", len(result.Files))
 
 	if len(result.Files) == 0 {
 		fmt.Println("No media files found to organize.")
@@ -198,57 +221,83 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	if conflictCount > 0 {
 		fmt.Printf("\n⚠ Conflicts: %d (strategy: %s)\n", conflictCount, organizeConflictStrategy)
 	}
-	fmt.Println()
+	if !organizeJSONOutput {
+		fmt.Println()
+	}
 
-	// Execute organization
-	if organizeDryRun {
-		fmt.Println("Simulating file operations...")
-	} else {
-		fmt.Println("Organizing files...")
+	// Execute organization with progress tracking
+	if !organizeJSONOutput {
+		if organizeDryRun {
+			fmt.Println("Simulating file operations...")
+		} else {
+			fmt.Println("Organizing files...")
+		}
 	}
 
 	var ops []types.Operation
 	var txnID string
 
+	execTimer := stats.NewTimer("execution")
 	if tm != nil {
 		txnID, ops, err = org.ExecuteWithTransaction(plans, organizeConflictStrategy)
 		if err != nil {
+			execTimer.Stop()
 			return fmt.Errorf("organization failed: %w", err)
 		}
 	} else {
 		ops, err = org.Execute(plans, organizeConflictStrategy)
 		if err != nil {
+			execTimer.Stop()
 			return fmt.Errorf("organization failed: %w", err)
 		}
 	}
+	execTimer.Stop()
 
-	// Count results
+	// Count results and update statistics
 	successCount := 0
 	failedCount := 0
 	skippedCount := len(plans) - len(ops) // Plans that were skipped due to conflicts
+	var totalBytes int64
 
 	for _, op := range ops {
 		if op.Status == types.OperationStatusCompleted {
 			successCount++
+			// Try to get file size from destination (after move) or source (if still there)
+			if info, err := os.Stat(op.Destination); err == nil {
+				totalBytes += info.Size()
+			} else if info, err := os.Stat(op.Source); err == nil {
+				totalBytes += info.Size()
+			}
 		} else if op.Status == types.OperationStatusFailed {
 			failedCount++
+			// For failed operations, try to get file size from source
+			if info, err := os.Stat(op.Source); err == nil {
+				totalBytes += info.Size()
+			}
 		}
 	}
+	
+	stats.Add("files_organized", successCount)
+	stats.Add("files_failed", failedCount)
+	stats.Add("files_skipped", skippedCount)
+	stats.AddSize("total_bytes", totalBytes)
 
 	// Display results
-	fmt.Println()
-	fmt.Println("Results:")
-	fmt.Println("========")
-	if organizeDryRun {
-		fmt.Printf("Would organize: %d files\n", successCount)
-	} else {
-		fmt.Printf("✓ Successfully organized: %d files\n", successCount)
-	}
-	if failedCount > 0 {
-		fmt.Printf("✗ Failed: %d files\n", failedCount)
-	}
-	if skippedCount > 0 {
-		fmt.Printf("⊘ Skipped: %d files\n", skippedCount)
+	if !organizeJSONOutput {
+		fmt.Println()
+		fmt.Println("Results:")
+		fmt.Println("========")
+		if organizeDryRun {
+			fmt.Printf("Would organize: %d files\n", successCount)
+		} else {
+			fmt.Printf("✓ Successfully organized: %d files\n", successCount)
+		}
+		if failedCount > 0 {
+			fmt.Printf("✗ Failed: %d files\n", failedCount)
+		}
+		if skippedCount > 0 {
+			fmt.Printf("⊘ Skipped: %d files\n", skippedCount)
+		}
 	}
 
 	// Display failures if any
@@ -263,19 +312,38 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	}
 
 	// Display transaction ID if available
-	if txnID != "" {
+	if txnID != "" && !organizeJSONOutput {
 		fmt.Printf("\nTransaction ID: %s\n", txnID)
 		fmt.Printf("To rollback this operation, run: go-jf-org rollback %s\n", txnID)
 	}
 
 	// Success message
-	if successCount > 0 && !organizeDryRun {
+	if successCount > 0 && !organizeDryRun && !organizeJSONOutput {
 		fmt.Printf("\n✓ Organization complete! Files are now in:\n")
 		fmt.Printf("  %s\n", destRoot)
 	}
 
-	if organizeDryRun {
+	if organizeDryRun && !organizeJSONOutput {
 		fmt.Println("\nTo execute this organization, run the same command without --dry-run")
+	}
+	
+	// Finalize and display statistics
+	stats.Finish()
+	
+	if organizeJSONOutput {
+		jsonStr, err := stats.ToJSON()
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to generate JSON statistics")
+		} else {
+			fmt.Fprintln(os.Stdout, jsonStr)
+		}
+	} else {
+		// Show summary statistics
+		fmt.Println()
+		fmt.Printf("Completed in %s\n", util.FormatDuration(stats.Duration))
+		if totalBytes > 0 {
+			fmt.Printf("Total data processed: %s\n", util.FormatBytes(totalBytes))
+		}
 	}
 
 	return nil

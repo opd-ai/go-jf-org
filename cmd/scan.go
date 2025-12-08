@@ -8,6 +8,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
+	"github.com/opd-ai/go-jf-org/internal/api/musicbrainz"
+	"github.com/opd-ai/go-jf-org/internal/api/openlibrary"
 	"github.com/opd-ai/go-jf-org/internal/api/tmdb"
 	"github.com/opd-ai/go-jf-org/internal/config"
 	"github.com/opd-ai/go-jf-org/internal/scanner"
@@ -24,14 +26,15 @@ var scanCmd = &cobra.Command{
 	Long: `Scan scans the specified directory (and subdirectories) for media files.
 
 It identifies video, audio, and book files based on their extensions
-and reports what it finds. Use --enrich to fetch metadata from TMDB.`,
+and reports what it finds. Use --enrich to fetch metadata from external APIs
+(TMDB for movies/TV, MusicBrainz for music, OpenLibrary for books).`,
 	Args: cobra.ExactArgs(1),
 	RunE: runScan,
 }
 
 func init() {
 	rootCmd.AddCommand(scanCmd)
-	scanCmd.Flags().BoolVar(&enrichScan, "enrich", false, "Enrich metadata using TMDB API (requires API key)")
+	scanCmd.Flags().BoolVar(&enrichScan, "enrich", false, "Enrich metadata using external APIs (TMDB, MusicBrainz, OpenLibrary)")
 }
 
 func runScan(cmd *cobra.Command, args []string) error {
@@ -63,21 +66,43 @@ func runScan(cmd *cobra.Command, args []string) error {
 		minSize,
 	)
 
-	// Set up enricher if requested
-	var enricher *tmdb.Enricher
+	// Set up enrichers if requested
+	var tmdbEnricher *tmdb.Enricher
+	var mbEnricher *musicbrainz.Enricher
+	var olEnricher *openlibrary.Enricher
+	
 	if enrichScan {
+		// Set up TMDB enricher for movies and TV shows
 		if cfg.APIKeys.TMDB == "" {
-			log.Warn().Msg("TMDB API key not configured, skipping enrichment. Set api_keys.tmdb in config.")
+			log.Warn().Msg("TMDB API key not configured, skipping movie/TV enrichment. Set api_keys.tmdb in config.")
 		} else {
 			client, err := tmdb.NewClient(tmdb.Config{
 				APIKey: cfg.APIKeys.TMDB,
 			})
 			if err != nil {
-				log.Warn().Err(err).Msg("Failed to create TMDB client, skipping enrichment")
+				log.Warn().Err(err).Msg("Failed to create TMDB client, skipping movie/TV enrichment")
 			} else {
-				enricher = tmdb.NewEnricher(client)
-				log.Info().Msg("TMDB enrichment enabled")
+				tmdbEnricher = tmdb.NewEnricher(client)
+				log.Info().Msg("TMDB enrichment enabled for movies and TV shows")
 			}
+		}
+
+		// Set up MusicBrainz enricher for music
+		mbClient, err := musicbrainz.NewClient(musicbrainz.Config{})
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to create MusicBrainz client, skipping music enrichment")
+		} else {
+			mbEnricher = musicbrainz.NewEnricher(mbClient)
+			log.Info().Msg("MusicBrainz enrichment enabled for music")
+		}
+
+		// Set up OpenLibrary enricher for books
+		olClient, err := openlibrary.NewClient(openlibrary.Config{})
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to create OpenLibrary client, skipping book enrichment")
+		} else {
+			olEnricher = openlibrary.NewEnricher(olClient)
+			log.Info().Msg("OpenLibrary enrichment enabled for books")
 		}
 	}
 
@@ -133,16 +158,32 @@ func runScan(cmd *cobra.Command, args []string) error {
 				continue
 			}
 
-			// Enrich metadata if enricher is available
-			if enricher != nil && metadata != nil {
+			// Enrich metadata if enrichers are available
+			if metadata != nil {
 				switch mediaType {
 				case types.MediaTypeMovie:
-					if err := enricher.EnrichMovie(metadata); err != nil {
-						log.Debug().Err(err).Str("file", file).Msg("Failed to enrich movie metadata")
+					if tmdbEnricher != nil {
+						if err := tmdbEnricher.EnrichMovie(metadata); err != nil {
+							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich movie metadata")
+						}
 					}
 				case types.MediaTypeTV:
-					if err := enricher.EnrichTVShow(metadata); err != nil {
-						log.Debug().Err(err).Str("file", file).Msg("Failed to enrich TV metadata")
+					if tmdbEnricher != nil {
+						if err := tmdbEnricher.EnrichTVShow(metadata); err != nil {
+							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich TV metadata")
+						}
+					}
+				case types.MediaTypeMusic:
+					if mbEnricher != nil {
+						if err := mbEnricher.EnrichMusic(metadata); err != nil {
+							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich music metadata")
+						}
+					}
+				case types.MediaTypeBook:
+					if olEnricher != nil {
+						if err := olEnricher.EnrichBook(metadata); err != nil {
+							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich book metadata")
+						}
 					}
 				}
 			}
@@ -205,6 +246,52 @@ func runScan(cmd *cobra.Command, args []string) error {
 					}
 					if len(metadata.TVMetadata.Genres) > 0 {
 						fmt.Printf("          Genres: %v\n", metadata.TVMetadata.Genres)
+					}
+				}
+			case types.MediaTypeMusic:
+				fmt.Printf("  [music] %s\n", file)
+				if metadata.MusicMetadata != nil {
+					if metadata.MusicMetadata.Artist != "" {
+						fmt.Printf("          Artist: %s\n", metadata.MusicMetadata.Artist)
+					}
+					if metadata.MusicMetadata.Album != "" {
+						fmt.Printf("          Album: %s", metadata.MusicMetadata.Album)
+						if metadata.Year > 0 {
+							fmt.Printf(" (%d)", metadata.Year)
+						}
+						fmt.Println()
+					}
+					if metadata.MusicMetadata.TrackNumber > 0 {
+						fmt.Printf("          Track: %d\n", metadata.MusicMetadata.TrackNumber)
+					}
+					if metadata.MusicMetadata.Genre != "" {
+						fmt.Printf("          Genre: %s\n", metadata.MusicMetadata.Genre)
+					}
+					if metadata.MusicMetadata.MusicBrainzRID != "" {
+						fmt.Printf("          MusicBrainz ID: %s\n", metadata.MusicMetadata.MusicBrainzRID)
+					}
+				}
+			case types.MediaTypeBook:
+				fmt.Printf("  [book] %s\n", file)
+				if metadata.BookMetadata != nil {
+					if metadata.BookMetadata.Author != "" {
+						fmt.Printf("          Author: %s\n", metadata.BookMetadata.Author)
+					}
+					if metadata.Title != "" {
+						fmt.Printf("          Title: %s", metadata.Title)
+						if metadata.Year > 0 {
+							fmt.Printf(" (%d)", metadata.Year)
+						}
+						fmt.Println()
+					}
+					if metadata.BookMetadata.Publisher != "" {
+						fmt.Printf("          Publisher: %s\n", metadata.BookMetadata.Publisher)
+					}
+					if metadata.BookMetadata.ISBN != "" {
+						fmt.Printf("          ISBN: %s\n", metadata.BookMetadata.ISBN)
+					}
+					if metadata.BookMetadata.Description != "" {
+						fmt.Printf("          Description: %s\n", truncate(metadata.BookMetadata.Description, 100))
 					}
 				}
 			default:

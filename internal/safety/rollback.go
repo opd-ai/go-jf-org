@@ -206,21 +206,34 @@ func (tm *TransactionManager) rollbackCreateFile(op types.Operation) error {
 
 // tryRemoveEmptyDir attempts to remove a directory if it's empty, doesn't error if not empty
 func (tm *TransactionManager) tryRemoveEmptyDir(dir string) {
-	entries, err := os.ReadDir(dir)
+	// Convert to absolute path for safety checks
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return
+	}
+
+	// Guard against removing important directories
+	home, _ := os.UserHomeDir()
+	cwd, _ := os.Getwd()
+	if absDir == "/" || absDir == "." || absDir == home || absDir == cwd {
+		return
+	}
+
+	entries, err := os.ReadDir(absDir)
 	if err != nil || len(entries) > 0 {
 		return
 	}
 
-	if err := os.Remove(dir); err != nil {
-		log.Debug().Err(err).Str("dir", dir).Msg("Could not remove directory")
+	if err := os.Remove(absDir); err != nil {
+		log.Debug().Err(err).Str("dir", absDir).Msg("Could not remove directory")
 		return
 	}
 
-	log.Debug().Str("dir", dir).Msg("Removed empty directory")
+	log.Debug().Str("dir", absDir).Msg("Removed empty directory")
 
 	// Recursively try to remove parent if empty
-	parent := filepath.Dir(dir)
-	if parent != dir && parent != "." && parent != "/" {
+	parent := filepath.Dir(absDir)
+	if parent != absDir {
 		tm.tryRemoveEmptyDir(parent)
 	}
 }

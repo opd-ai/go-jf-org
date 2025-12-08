@@ -7,6 +7,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
@@ -180,7 +182,19 @@ func (v *Validator) validatePath(path string) error {
 	}
 
 	// Check for unsafe characters (following Jellyfin conventions)
-	unsafeChars := []string{"<", ">", ":", "\"", "|", "?", "*"}
+	// On Windows, colons are allowed for drive letters (e.g., C:\)
+	unsafeChars := []string{"<", ">", "\"", "|", "?", "*"}
+	// Only check for colons on non-Windows platforms
+	// On Windows, we skip colon validation as it's part of drive letters
+	if strings.Contains(path, ":") {
+		// On Windows, allow colon only at position 1 for drive letters
+		colonIdx := strings.Index(path, ":")
+		if colonIdx != 1 || len(path) < 3 || path[2] != '\\' && path[2] != '/' {
+			// This is a colon not part of a drive letter, which is unsafe
+			// For non-Windows or colons beyond drive letter position
+			unsafeChars = append(unsafeChars, ":")
+		}
+	}
 	for _, char := range unsafeChars {
 		if strings.Contains(path, char) {
 			return fmt.Errorf("path contains unsafe character '%s'", char)
@@ -188,9 +202,11 @@ func (v *Validator) validatePath(path string) error {
 	}
 
 	// Check for leading/trailing dots or spaces in filename
+	// Note: This intentionally rejects hidden files (filenames starting with a dot, except "." and "..")
+	// Jellyfin media files should not be hidden; this restriction is for media safety and compatibility.
 	filename := filepath.Base(path)
 	if strings.HasPrefix(filename, ".") && filename != "." && filename != ".." {
-		return fmt.Errorf("filename starts with dot: %s", filename)
+		return fmt.Errorf("filename starts with dot (hidden files not allowed): %s", filename)
 	}
 	if strings.HasPrefix(filename, " ") || strings.HasSuffix(filename, " ") {
 		return fmt.Errorf("filename has leading or trailing spaces: %s", filename)
@@ -228,7 +244,11 @@ func (v *Validator) checkWritable(dir string) error {
 		return fmt.Errorf("directory is not writable: %w", err)
 	}
 	f.Close()
-	os.Remove(tmpFile)
+	// Clean up test file, log if removal fails but don't error
+	// (the existence of the file proved writability)
+	if err := os.Remove(tmpFile); err != nil {
+		log.Debug().Err(err).Str("file", tmpFile).Msg("Could not remove write test file")
+	}
 
 	return nil
 }
@@ -236,11 +256,13 @@ func (v *Validator) checkWritable(dir string) error {
 // checkDiskSpace verifies sufficient disk space is available
 func (v *Validator) checkDiskSpace(path string, requiredBytes uint64) error {
 	// Add 10% buffer
-	requiredBytes = requiredBytes + (requiredBytes / 10)
+	requiredWithBuffer := requiredBytes + (requiredBytes / 10)
 
-	// Ensure minimum free space
-	if requiredBytes < v.minFreeSpace {
+	// Use the maximum of buffered required space and minFreeSpace
+	if requiredWithBuffer < v.minFreeSpace {
 		requiredBytes = v.minFreeSpace
+	} else {
+		requiredBytes = requiredWithBuffer
 	}
 
 	// Note: syscall.Statfs_t is Unix-specific

@@ -17,15 +17,23 @@ func TestRollbackMove(t *testing.T) {
 	sourceFile := filepath.Join(tmpDir, "source", "movie.mkv")
 	destFile := filepath.Join(tmpDir, "dest", "Movie (2023)", "Movie (2023).mkv")
 
-	os.MkdirAll(filepath.Dir(sourceFile), 0755)
-	os.WriteFile(sourceFile, []byte("test content"), 0644)
+	if err := os.MkdirAll(filepath.Dir(sourceFile), 0755); err != nil {
+		t.Fatalf("Failed to create source directory: %v", err)
+	}
+	if err := os.WriteFile(sourceFile, []byte("test content"), 0644); err != nil {
+		t.Fatalf("Failed to create source file: %v", err)
+	}
 
 	// Create transaction and move file
 	txn, _ := tm.Begin()
 
 	// Simulate move operation
-	os.MkdirAll(filepath.Dir(destFile), 0755)
-	os.Rename(sourceFile, destFile)
+	if err := os.MkdirAll(filepath.Dir(destFile), 0755); err != nil {
+		t.Fatalf("Failed to create destination directory: %v", err)
+	}
+	if err := os.Rename(sourceFile, destFile); err != nil {
+		t.Fatalf("Failed to move source file to destination: %v", err)
+	}
 
 	op := types.Operation{
 		Type:        types.OperationMove,
@@ -69,17 +77,31 @@ func TestRollbackMultipleOperations(t *testing.T) {
 	dest1 := filepath.Join(tmpDir, "dest", "Movie1 (2023)", "Movie1 (2023).mkv")
 	dest2 := filepath.Join(tmpDir, "dest", "Movie2 (2024)", "Movie2 (2024).mkv")
 
-	os.MkdirAll(filepath.Dir(file1), 0755)
-	os.WriteFile(file1, []byte("content1"), 0644)
-	os.WriteFile(file2, []byte("content2"), 0644)
+	if err := os.MkdirAll(filepath.Dir(file1), 0755); err != nil {
+		t.Fatalf("Failed to create source directory: %v", err)
+	}
+	if err := os.WriteFile(file1, []byte("content1"), 0644); err != nil {
+		t.Fatalf("Failed to create file1: %v", err)
+	}
+	if err := os.WriteFile(file2, []byte("content2"), 0644); err != nil {
+		t.Fatalf("Failed to create file2: %v", err)
+	}
 
 	txn, _ := tm.Begin()
 
 	// Simulate move operations
-	os.MkdirAll(filepath.Dir(dest1), 0755)
-	os.MkdirAll(filepath.Dir(dest2), 0755)
-	os.Rename(file1, dest1)
-	os.Rename(file2, dest2)
+	if err := os.MkdirAll(filepath.Dir(dest1), 0755); err != nil {
+		t.Fatalf("Failed to create dest1 directory: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(dest2), 0755); err != nil {
+		t.Fatalf("Failed to create dest2 directory: %v", err)
+	}
+	if err := os.Rename(file1, dest1); err != nil {
+		t.Fatalf("Failed to move file1: %v", err)
+	}
+	if err := os.Rename(file2, dest2); err != nil {
+		t.Fatalf("Failed to move file2: %v", err)
+	}
 
 	op1 := types.Operation{
 		Type:        types.OperationMove,
@@ -127,8 +149,12 @@ func TestRollbackCreateFile(t *testing.T) {
 
 	// Create a file
 	nfoFile := filepath.Join(tmpDir, "Movie (2023)", "movie.nfo")
-	os.MkdirAll(filepath.Dir(nfoFile), 0755)
-	os.WriteFile(nfoFile, []byte("<movie></movie>"), 0644)
+	if err := os.MkdirAll(filepath.Dir(nfoFile), 0755); err != nil {
+		t.Fatalf("Failed to create directory: %v", err)
+	}
+	if err := os.WriteFile(nfoFile, []byte("<movie></movie>"), 0644); err != nil {
+		t.Fatalf("Failed to create NFO file: %v", err)
+	}
 
 	txn, _ := tm.Begin()
 	op := types.Operation{
@@ -158,7 +184,9 @@ func TestRollbackCreateDir(t *testing.T) {
 
 	// Create a directory
 	newDir := filepath.Join(tmpDir, "Movie (2023)")
-	os.MkdirAll(newDir, 0755)
+	if err := os.MkdirAll(newDir, 0755); err != nil {
+		t.Fatalf("Failed to create directory: %v", err)
+	}
 
 	txn, _ := tm.Begin()
 	op := types.Operation{
@@ -188,8 +216,12 @@ func TestRollbackCreateDirNotEmpty(t *testing.T) {
 
 	// Create a directory with a file
 	newDir := filepath.Join(tmpDir, "Movie (2023)")
-	os.MkdirAll(newDir, 0755)
-	os.WriteFile(filepath.Join(newDir, "movie.mkv"), []byte("content"), 0644)
+	if err := os.MkdirAll(newDir, 0755); err != nil {
+		t.Fatalf("Failed to create directory: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(newDir, "movie.mkv"), []byte("content"), 0644); err != nil {
+		t.Fatalf("Failed to create file: %v", err)
+	}
 
 	txn, _ := tm.Begin()
 	op := types.Operation{
@@ -289,7 +321,9 @@ func TestRollbackSourceOccupied(t *testing.T) {
 	destFile := filepath.Join(tmpDir, "dest.mkv")
 
 	// Create destination file
-	os.WriteFile(destFile, []byte("content"), 0644)
+	if err := os.WriteFile(destFile, []byte("content"), 0644); err != nil {
+		t.Fatalf("Failed to create destination file: %v", err)
+	}
 
 	txn, _ := tm.Begin()
 	op := types.Operation{
@@ -302,7 +336,9 @@ func TestRollbackSourceOccupied(t *testing.T) {
 	tm.Complete(txn)
 
 	// Create a file at source location
-	os.WriteFile(sourceFile, []byte("new content"), 0644)
+	if err := os.WriteFile(sourceFile, []byte("new content"), 0644); err != nil {
+		t.Fatalf("Failed to create source file: %v", err)
+	}
 
 	// Rollback should fail because source is occupied
 	err := tm.Rollback(txn.ID)
@@ -319,12 +355,16 @@ func TestRollbackSkipsPendingOperations(t *testing.T) {
 	// Create a file
 	sourceFile := filepath.Join(tmpDir, "source.mkv")
 	destFile := filepath.Join(tmpDir, "dest.mkv")
-	os.WriteFile(sourceFile, []byte("content"), 0644)
+	if err := os.WriteFile(sourceFile, []byte("content"), 0644); err != nil {
+		t.Fatalf("Failed to create source file: %v", err)
+	}
 
 	txn, _ := tm.Begin()
 
 	// Add completed operation
-	os.Rename(sourceFile, destFile)
+	if err := os.Rename(sourceFile, destFile); err != nil {
+		t.Fatalf("Failed to move file: %v", err)
+	}
 	op1 := types.Operation{
 		Type:        types.OperationMove,
 		Source:      sourceFile,

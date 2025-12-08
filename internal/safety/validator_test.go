@@ -3,6 +3,7 @@ package safety
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/opd-ai/go-jf-org/pkg/types"
@@ -15,8 +16,12 @@ func TestValidateMoveOperation_ValidFile(t *testing.T) {
 	// Create source file
 	sourceFile := filepath.Join(tmpDir, "source.mkv")
 	destFile := filepath.Join(tmpDir, "dest", "movie.mkv")
-	os.WriteFile(sourceFile, []byte("content"), 0644)
-	os.MkdirAll(filepath.Dir(destFile), 0755)
+	if err := os.WriteFile(sourceFile, []byte("content"), 0644); err != nil {
+		t.Fatalf("Failed to create source file: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(destFile), 0755); err != nil {
+		t.Fatalf("Failed to create destination directory: %v", err)
+	}
 
 	op := types.Operation{
 		Type:        types.OperationMove,
@@ -43,6 +48,8 @@ func TestValidateMoveOperation_NonExistentSource(t *testing.T) {
 	err := v.ValidateOperation(op)
 	if err == nil {
 		t.Error("Expected validation error for non-existent source")
+	} else if _, ok := err.(*ValidationError); !ok {
+		t.Errorf("Expected ValidationError, got %T: %v", err, err)
 	}
 }
 
@@ -51,7 +58,9 @@ func TestValidateMoveOperation_SourceIsDirectory(t *testing.T) {
 	v := NewValidator()
 
 	sourceDir := filepath.Join(tmpDir, "source")
-	os.MkdirAll(sourceDir, 0755)
+	if err := os.MkdirAll(sourceDir, 0755); err != nil {
+		t.Fatalf("Failed to create source directory: %v", err)
+	}
 
 	op := types.Operation{
 		Type:        types.OperationMove,
@@ -62,15 +71,22 @@ func TestValidateMoveOperation_SourceIsDirectory(t *testing.T) {
 	err := v.ValidateOperation(op)
 	if err == nil {
 		t.Error("Expected validation error for directory source")
+	} else if _, ok := err.(*ValidationError); !ok {
+		t.Errorf("Expected ValidationError, got %T: %v", err, err)
 	}
 }
 
 func TestValidateMoveOperation_UnreadableSource(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Permission testing not reliable on Windows")
+	}
 	tmpDir := t.TempDir()
 	v := NewValidator()
 
 	sourceFile := filepath.Join(tmpDir, "source.mkv")
-	os.WriteFile(sourceFile, []byte("content"), 0000) // No permissions
+	if err := os.WriteFile(sourceFile, []byte("content"), 0000); err != nil {
+		t.Fatalf("Failed to create source file: %v", err)
+	}
 
 	op := types.Operation{
 		Type:        types.OperationMove,
@@ -81,6 +97,8 @@ func TestValidateMoveOperation_UnreadableSource(t *testing.T) {
 	err := v.ValidateOperation(op)
 	if err == nil {
 		t.Error("Expected validation error for unreadable source")
+	} else if _, ok := err.(*ValidationError); !ok {
+		t.Errorf("Expected ValidationError, got %T: %v", err, err)
 	}
 
 	// Cleanup
@@ -144,7 +162,9 @@ func TestValidateCreateFileOperation_AlreadyExists(t *testing.T) {
 	v := NewValidator()
 
 	existingFile := filepath.Join(tmpDir, "existing.nfo")
-	os.WriteFile(existingFile, []byte("content"), 0644)
+	if err := os.WriteFile(existingFile, []byte("content"), 0644); err != nil {
+		t.Fatalf("Failed to create existing file: %v", err)
+	}
 
 	op := types.Operation{
 		Type:        types.OperationCreateFile,
@@ -154,6 +174,8 @@ func TestValidateCreateFileOperation_AlreadyExists(t *testing.T) {
 	err := v.ValidateOperation(op)
 	if err == nil {
 		t.Error("Expected validation error for existing file")
+	} else if _, ok := err.(*ValidationError); !ok {
+		t.Errorf("Expected ValidationError, got %T: %v", err, err)
 	}
 }
 
@@ -248,7 +270,9 @@ func TestCheckWritable(t *testing.T) {
 			name: "existing writable directory",
 			setup: func() string {
 				dir := filepath.Join(tmpDir, "writable")
-				os.MkdirAll(dir, 0755)
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					t.Fatalf("Failed to create writable directory: %v", err)
+				}
 				return dir
 			},
 			shouldErr: false,
@@ -264,7 +288,9 @@ func TestCheckWritable(t *testing.T) {
 			name: "path is a file, not directory",
 			setup: func() string {
 				file := filepath.Join(tmpDir, "file.txt")
-				os.WriteFile(file, []byte("content"), 0644)
+				if err := os.WriteFile(file, []byte("content"), 0644); err != nil {
+					t.Fatalf("Failed to create file: %v", err)
+				}
 				return file
 			},
 			shouldErr: true,

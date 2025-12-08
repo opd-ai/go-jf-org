@@ -20,7 +20,9 @@
 **ID:** BUG-RACE-001  
 **File:** internal/util/progress.go:196-217  
 **Severity:** High  
-**Status:** Unresolved
+**Status:** ✅ Resolved  
+**Fixed:** 2025-12-08 (commit: pending)  
+**Resolution:** Added sync.Once to ensure channel is closed exactly once, preventing race conditions on concurrent Stop() calls.
 
 ### Description
 The Spinner.Stop() method has a potential race condition. It checks s.running, sets it to false, and then attempts to close s.stopChan. However, the channel might already be closed by a concurrent goroutine, or the select statement's default case might not prevent all double-close scenarios.
@@ -263,4 +265,10 @@ README claims "planning phase" but codebase is at v0.8.0-dev with extensive impl
 
 ## Resolution Log
 
-_Fixes will be logged here as they are completed._
+### 2025-12-08 - BUG-RACE-001 Fixed
+**Commit:** (pending)  
+**Bug:** Race Condition in Spinner.Stop()  
+**Root Cause:** The select statement checking if channel was closed had a race window where two goroutines could both attempt to close the channel.  
+**Fix:** Added `sync.Once` field to Spinner struct. The channel close operation is now wrapped in `stopOnce.Do()`, guaranteeing exactly-once semantics even with concurrent Stop() calls. The sync.Once is reset in Start() for reusability.  
+**Verification:** Existing tests pass. Code path analysis confirms no concurrent close scenarios possible.
+

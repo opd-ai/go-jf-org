@@ -150,6 +150,7 @@ type Spinner struct {
 	writer      io.Writer
 	enabled     bool
 	stopChan    chan struct{}
+	stopOnce    sync.Once // Ensures channel is closed only once
 }
 
 // NewSpinner creates a new spinner
@@ -186,6 +187,7 @@ func (s *Spinner) Start() {
 	}
 	s.running = true
 	s.stopChan = make(chan struct{}) // Recreate channel for reuse
+	s.stopOnce = sync.Once{}         // Reset sync.Once for this start/stop cycle
 	s.mu.Unlock()
 
 	go s.animate()
@@ -202,13 +204,11 @@ func (s *Spinner) Stop() {
 
 	s.running = false
 	
-	// Only close channel if it's not already closed
-	select {
-	case <-s.stopChan:
-		// Already closed
-	default:
+	// Use sync.Once to ensure channel is closed exactly once
+	// This prevents race conditions when Stop() is called concurrently
+	s.stopOnce.Do(func() {
 		close(s.stopChan)
-	}
+	})
 
 	// Clear spinner line
 	if s.enabled {

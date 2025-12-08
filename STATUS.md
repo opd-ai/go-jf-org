@@ -1,8 +1,8 @@
 # Project Status
 
 **Last Updated:** 2025-12-08  
-**Version:** 0.5.0-dev  
-**Status:** Phase 1-4 Complete (Foundation + Metadata + Organization + Safety) - Active Development
+**Version:** 0.6.0-dev  
+**Status:** Phase 1-4 Complete (Foundation + Metadata + Organization + Safety + Verify) - Active Development
 
 ## What Has Been Delivered
 
@@ -105,7 +105,7 @@ This repository contains a comprehensive implementation plan and **working Phase
 - [x] Transaction list and show commands
 - [x] Integration with organize command
 - [x] **NFO file operations in transaction log**
-- [ ] Verify command (deferred to future phase)
+- [x] **Verify command - validates Jellyfin structure**
 
 #### Phase 5: Polish (0% complete)
 - [ ] Progress indicators
@@ -128,6 +128,7 @@ The tool is **fully functional for organizing media files with NFO generation**.
 - Preview organization plans before executing
 - Organize movies and TV shows into Jellyfin-compatible structure
 - **Generate Jellyfin-compatible NFO metadata files (--create-nfo flag)**
+- **Verify existing directories follow Jellyfin conventions**
 - Handle conflicts with skip or rename strategies
 - Use dry-run mode for safety testing
 - Automatic transaction logging for all organize operations
@@ -167,6 +168,10 @@ make build
 
 # Organize only movies
 ./bin/go-jf-org organize /path/to/media --dest /organized --type movie
+
+# Verify organized structure
+./bin/go-jf-org verify /media/jellyfin/movies --type movie
+./bin/go-jf-org verify /media/jellyfin/tv --type tv --strict
 ```
 
 ### For Developers

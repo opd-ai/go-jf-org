@@ -200,7 +200,14 @@ func (s *Spinner) Stop() {
 	}
 
 	s.running = false
-	close(s.stopChan)
+	
+	// Only close channel if it's not already closed
+	select {
+	case <-s.stopChan:
+		// Already closed
+	default:
+		close(s.stopChan)
+	}
 
 	// Clear spinner line
 	if s.enabled {

@@ -36,5 +36,9 @@ func formatBytesHelper(bytes int64) string {
 	}
 	
 	units := []string{"KB", "MB", "GB", "TB", "PB"}
+	// Bounds check to prevent panic
+	if exp >= len(units) {
+		exp = len(units) - 1
+	}
 	return fmt.Sprintf("%.2f %s", float64(bytes)/float64(div), units[exp])
 }

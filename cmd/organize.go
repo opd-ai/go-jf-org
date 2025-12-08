@@ -18,6 +18,7 @@ var (
 	organizeConflictStrategy string
 	organizeDryRun          bool
 	organizeNoTransaction   bool
+	organizeCreateNFO       bool
 )
 
 var organizeCmd = &cobra.Command{
@@ -50,6 +51,7 @@ func init() {
 	organizeCmd.Flags().StringVar(&organizeConflictStrategy, "conflict", "skip", "conflict resolution strategy (skip, rename)")
 	organizeCmd.Flags().BoolVar(&organizeDryRun, "dry-run", false, "preview changes without executing")
 	organizeCmd.Flags().BoolVar(&organizeNoTransaction, "no-transaction", false, "disable transaction logging (not recommended)")
+	organizeCmd.Flags().BoolVar(&organizeCreateNFO, "create-nfo", false, "create Jellyfin-compatible NFO metadata files")
 }
 
 func runOrganize(cmd *cobra.Command, args []string) error {
@@ -121,6 +123,13 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		org = organizer.NewOrganizer(organizeDryRun)
+	}
+	
+	// Configure NFO generation
+	org.SetCreateNFO(organizeCreateNFO)
+	
+	if organizeCreateNFO {
+		log.Info().Msg("NFO file generation enabled")
 	}
 
 	// Plan organization

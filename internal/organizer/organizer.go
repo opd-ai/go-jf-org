@@ -390,8 +390,15 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 		showDir := filepath.Dir(destDir)
 		tvshowNFOPath := filepath.Join(showDir, "tvshow.nfo")
 		
-		// Only create tvshow.nfo if it doesn't exist (multiple episodes share same show)
-		if _, err := os.Stat(tvshowNFOPath); os.IsNotExist(err) {
+		// Check if tvshow.nfo already exists (multiple episodes share same show)
+		if _, err := os.Stat(tvshowNFOPath); err == nil {
+			// File exists, skip creation
+			log.Debug().Str("path", tvshowNFOPath).Msg("Skipping existing tvshow.nfo")
+		} else if !os.IsNotExist(err) {
+			// Stat failed for some other reason (e.g., permission denied)
+			return nil, fmt.Errorf("failed to check if tvshow.nfo exists: %w", err)
+		} else {
+			// File doesn't exist, create it
 			content, err := o.nfoGenerator.GenerateTVShowNFO(plan.Metadata)
 			if err != nil {
 				return nil, fmt.Errorf("failed to generate TV show NFO: %w", err)
@@ -423,8 +430,15 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 		// Create season.nfo in the season directory
 		seasonNFOPath := filepath.Join(destDir, "season.nfo")
 		
-		// Only create season.nfo if it doesn't exist (multiple episodes share same season)
-		if _, err := os.Stat(seasonNFOPath); os.IsNotExist(err) {
+		// Check if season.nfo already exists (multiple episodes share same season)
+		if _, err := os.Stat(seasonNFOPath); err == nil {
+			// File exists, skip creation
+			log.Debug().Str("path", seasonNFOPath).Msg("Skipping existing season.nfo")
+		} else if !os.IsNotExist(err) {
+			// Stat failed for some other reason (e.g., permission denied)
+			return nil, fmt.Errorf("failed to check if season.nfo exists: %w", err)
+		} else {
+			// File doesn't exist, create it
 			content, err := o.nfoGenerator.GenerateSeasonNFO(tv.Season)
 			if err != nil {
 				return nil, fmt.Errorf("failed to generate season NFO: %w", err)

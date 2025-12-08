@@ -30,7 +30,7 @@ go-jf-org is a CLI tool for organizing disorganized media files into Jellyfin-co
 - Full organization with Jellyfin naming conventions (Phase 3)
 - Transaction logging and rollback capabilities (Phase 4)
 - NFO file generation for movies and TV shows
-- API integr ation with TMDB, MusicBrainz, and OpenLibrary
+- API integration with TMDB, MusicBrainz, and OpenLibrary
 
 ### Code Maturity Assessment
 **Classification:** Mid-to-Mature Stage

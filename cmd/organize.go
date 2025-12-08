@@ -233,13 +233,6 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 			fmt.Println("Organizing files...")
 		}
 	}
-	
-	// Create progress tracker for file operations
-	var progress *util.ProgressTracker
-	if !organizeJSONOutput {
-		progress = util.NewProgressTracker(len(plans), "Processing files")
-		defer progress.Finish()
-	}
 
 	var ops []types.Operation
 	var txnID string
@@ -259,10 +252,6 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 		}
 	}
 	execTimer.Stop()
-	
-	if progress != nil {
-		progress.Finish()
-	}
 
 	// Count results and update statistics
 	successCount := 0
@@ -273,12 +262,18 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	for _, op := range ops {
 		if op.Status == types.OperationStatusCompleted {
 			successCount++
-			// Try to get file size
-			if info, err := os.Stat(op.Source); err == nil {
+			// Try to get file size from destination (after move) or source (if still there)
+			if info, err := os.Stat(op.Destination); err == nil {
+				totalBytes += info.Size()
+			} else if info, err := os.Stat(op.Source); err == nil {
 				totalBytes += info.Size()
 			}
 		} else if op.Status == types.OperationStatusFailed {
 			failedCount++
+			// For failed operations, try to get file size from source
+			if info, err := os.Stat(op.Source); err == nil {
+				totalBytes += info.Size()
+			}
 		}
 	}
 	
@@ -342,12 +337,12 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 		} else {
 			fmt.Fprintln(os.Stdout, jsonStr)
 		}
-	} else if !organizeDryRun {
+	} else {
 		// Show summary statistics
 		fmt.Println()
-		fmt.Printf("Completed in %s\n", formatDurationHelper(stats.Duration))
+		fmt.Printf("Completed in %s\n", util.FormatDuration(stats.Duration))
 		if totalBytes > 0 {
-			fmt.Printf("Total data processed: %s\n", formatBytesHelper(totalBytes))
+			fmt.Printf("Total data processed: %s\n", util.FormatBytes(totalBytes))
 		}
 	}
 

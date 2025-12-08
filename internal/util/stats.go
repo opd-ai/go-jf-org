@@ -125,7 +125,7 @@ func (s *Statistics) Summary() string {
 	summary += "==================\n\n"
 
 	// Duration
-	summary += fmt.Sprintf("Duration: %s\n\n", formatDuration(s.Duration))
+	summary += fmt.Sprintf("Duration: %s\n\n", FormatDuration(s.Duration))
 
 	// Counters
 	if len(s.Counters) > 0 {
@@ -140,7 +140,7 @@ func (s *Statistics) Summary() string {
 	if len(s.Sizes) > 0 {
 		summary += "Data Processed:\n"
 		for name, bytes := range s.Sizes {
-			summary += fmt.Sprintf("  %s: %s\n", name, formatBytes(bytes))
+			summary += fmt.Sprintf("  %s: %s\n", name, FormatBytes(bytes))
 		}
 		summary += "\n"
 	}
@@ -149,7 +149,7 @@ func (s *Statistics) Summary() string {
 	if len(s.Timings) > 0 {
 		summary += "Timings:\n"
 		for name, duration := range s.Timings {
-			summary += fmt.Sprintf("  %s: %s\n", name, formatDuration(duration))
+			summary += fmt.Sprintf("  %s: %s\n", name, FormatDuration(duration))
 		}
 		summary += "\n"
 	}
@@ -165,7 +165,7 @@ func (s *Statistics) Summary() string {
 		bytesProcessed := s.Sizes["total_bytes"]
 		if bytesProcessed > 0 {
 			rate := float64(bytesProcessed) / s.Duration.Seconds()
-			summary += fmt.Sprintf("Data Rate: %s/second\n", formatBytes(int64(rate)))
+			summary += fmt.Sprintf("Data Rate: %s/second\n", FormatBytes(int64(rate)))
 		}
 	}
 
@@ -204,6 +204,7 @@ type OperationStats struct {
 	BytesProcessed int64
 	StartTime time.Time
 	EndTime   time.Time
+	mu        sync.RWMutex
 }
 
 // NewOperationStats creates a new operation statistics tracker
@@ -217,31 +218,43 @@ func NewOperationStats(name string, total int) *OperationStats {
 
 // IncrementCompleted increments the completed counter
 func (os *OperationStats) IncrementCompleted() {
+	os.mu.Lock()
+	defer os.mu.Unlock()
 	os.Completed++
 }
 
 // IncrementFailed increments the failed counter
 func (os *OperationStats) IncrementFailed() {
+	os.mu.Lock()
+	defer os.mu.Unlock()
 	os.Failed++
 }
 
 // IncrementSkipped increments the skipped counter
 func (os *OperationStats) IncrementSkipped() {
+	os.mu.Lock()
+	defer os.mu.Unlock()
 	os.Skipped++
 }
 
 // AddBytes adds to the bytes processed counter
 func (os *OperationStats) AddBytes(bytes int64) {
+	os.mu.Lock()
+	defer os.mu.Unlock()
 	os.BytesProcessed += bytes
 }
 
 // Finish marks the operation as complete
 func (os *OperationStats) Finish() {
+	os.mu.Lock()
+	defer os.mu.Unlock()
 	os.EndTime = time.Now()
 }
 
 // Duration returns the duration of the operation
 func (os *OperationStats) Duration() time.Duration {
+	os.mu.RLock()
+	defer os.mu.RUnlock()
 	if os.EndTime.IsZero() {
 		return time.Since(os.StartTime)
 	}
@@ -250,6 +263,9 @@ func (os *OperationStats) Duration() time.Duration {
 
 // Summary returns a human-readable summary
 func (os *OperationStats) Summary() string {
+	os.mu.RLock()
+	defer os.mu.RUnlock()
+	
 	duration := os.Duration()
 	summary := fmt.Sprintf("%s Statistics:\n", os.Name)
 	summary += fmt.Sprintf("  Total: %d\n", os.Total)
@@ -260,10 +276,10 @@ func (os *OperationStats) Summary() string {
 	if os.Skipped > 0 {
 		summary += fmt.Sprintf("  Skipped: %d\n", os.Skipped)
 	}
-	summary += fmt.Sprintf("  Duration: %s\n", formatDuration(duration))
+	summary += fmt.Sprintf("  Duration: %s\n", FormatDuration(duration))
 	
 	if os.BytesProcessed > 0 {
-		summary += fmt.Sprintf("  Data Processed: %s\n", formatBytes(os.BytesProcessed))
+		summary += fmt.Sprintf("  Data Processed: %s\n", FormatBytes(os.BytesProcessed))
 	}
 	
 	if duration > 0 && os.Completed > 0 {
@@ -274,8 +290,8 @@ func (os *OperationStats) Summary() string {
 	return summary
 }
 
-// formatBytes formats bytes in human-readable format
-func formatBytes(bytes int64) string {
+// FormatBytes formats bytes in human-readable format
+func FormatBytes(bytes int64) string {
 	const unit = 1024
 	if bytes < unit {
 		return fmt.Sprintf("%d B", bytes)

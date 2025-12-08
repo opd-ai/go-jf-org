@@ -186,46 +186,58 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 			// Enrich metadata if enrichers are available
 			if metadata != nil {
-				enrichTimer := stats.NewTimer("enrichment")
+				var enriched bool
 				switch mediaType {
 				case types.MediaTypeMovie:
 					if tmdbEnricher != nil {
+						enrichTimer := stats.NewTimer("enrichment")
 						if err := tmdbEnricher.EnrichMovie(metadata); err != nil {
 							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich movie metadata")
 							stats.Increment("enrichment_failures")
 						} else {
 							stats.Increment("enrichment_success")
+							enriched = true
 						}
+						enrichTimer.Stop()
 					}
 				case types.MediaTypeTV:
 					if tmdbEnricher != nil {
+						enrichTimer := stats.NewTimer("enrichment")
 						if err := tmdbEnricher.EnrichTVShow(metadata); err != nil {
 							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich TV metadata")
 							stats.Increment("enrichment_failures")
 						} else {
 							stats.Increment("enrichment_success")
+							enriched = true
 						}
+						enrichTimer.Stop()
 					}
 				case types.MediaTypeMusic:
 					if mbEnricher != nil {
+						enrichTimer := stats.NewTimer("enrichment")
 						if err := mbEnricher.EnrichMusic(metadata); err != nil {
 							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich music metadata")
 							stats.Increment("enrichment_failures")
 						} else {
 							stats.Increment("enrichment_success")
+							enriched = true
 						}
+						enrichTimer.Stop()
 					}
 				case types.MediaTypeBook:
 					if olEnricher != nil {
+						enrichTimer := stats.NewTimer("enrichment")
 						if err := olEnricher.EnrichBook(metadata); err != nil {
 							log.Debug().Err(err).Str("file", file).Msg("Failed to enrich book metadata")
 							stats.Increment("enrichment_failures")
 						} else {
 							stats.Increment("enrichment_success")
+							enriched = true
 						}
+						enrichTimer.Stop()
 					}
 				}
-				enrichTimer.Stop()
+				_ = enriched // Silence unused variable warning
 			}
 			
 			// Update progress if tracking
@@ -371,7 +383,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	} else if !verbose {
 		// Show summary statistics for non-verbose mode
 		fmt.Println()
-		fmt.Printf("Scan completed in %s\n", formatDurationHelper(stats.Duration))
+		fmt.Printf("Scan completed in %s\n", util.FormatDuration(stats.Duration))
 		if enrichScan {
 			enrichSuccess := stats.Get("enrichment_success")
 			enrichFailed := stats.Get("enrichment_failures")

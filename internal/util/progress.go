@@ -133,7 +133,7 @@ func (p *ProgressTracker) render() {
 	)
 
 	if eta > 0 {
-		output += fmt.Sprintf(" | ETA: %s", formatDuration(eta))
+		output += fmt.Sprintf(" | ETA: %s", FormatDuration(eta))
 	}
 
 	// Clear to end of line and write
@@ -185,6 +185,7 @@ func (s *Spinner) Start() {
 		return
 	}
 	s.running = true
+	s.stopChan = make(chan struct{}) // Recreate channel for reuse
 	s.mu.Unlock()
 
 	go s.animate()
@@ -235,8 +236,8 @@ func (s *Spinner) animate() {
 	}
 }
 
-// formatDuration formats a duration in a human-readable way
-func formatDuration(d time.Duration) string {
+// FormatDuration formats a duration in a human-readable way
+func FormatDuration(d time.Duration) string {
 	d = d.Round(time.Second)
 	h := d / time.Hour
 	d -= h * time.Hour

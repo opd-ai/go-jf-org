@@ -55,6 +55,10 @@ type MovieMetadata struct {
 	Rating        float64
 	TMDBID        int
 	IMDBID        string
+	Runtime       int    // Runtime in minutes
+	Tagline       string
+	PosterURL     string // URL to poster image
+	BackdropURL   string // URL to backdrop image
 }
 
 // TVMetadata contains TV show-specific metadata
@@ -67,6 +71,11 @@ type TVMetadata struct {
 	AirDate      string
 	TMDBID       int
 	TVDBID       int
+	Rating       float64
+	Genres       []string
+	Tagline      string
+	PosterURL    string // URL to poster image
+	BackdropURL  string // URL to backdrop image
 }
 
 // MusicMetadata contains music-specific metadata

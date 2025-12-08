@@ -20,8 +20,8 @@ type movieDetector struct {
 func NewMovieDetector() MovieDetector {
 	return &movieDetector{
 		// Match year patterns like (2023), .2023., [2023], _2023_, or at end of string
-		// Years from 1850-2100 (reasonable range for movies)
-		yearPattern: regexp.MustCompile(`[\[\(._\s](18[5-9]\d|19\d{2}|20\d{2}|2100)(?:[\]\)._\s]|$)`),
+		// Years from 1850-2199 (extended to cover 21st century beyond 2100)
+		yearPattern: regexp.MustCompile(`[\[\(._\s](18[5-9]\d|19\d{2}|20\d{2}|21\d{2})(?:[\]\)._\s]|$)`),
 	}
 }
 

@@ -266,6 +266,22 @@ func TestFormatBytes(t *testing.T) {
 			bytes:    1536 * 1024, // 1.5 MB
 			expected: "1.50 MB",
 		},
+		// Test extended units (BUG-EDGE-002 fix validation)
+		{
+			name:     "petabytes",
+			bytes:    1024 * 1024 * 1024 * 1024 * 1024,
+			expected: "1.00 PB",
+		},
+		{
+			name:     "exabytes",
+			bytes:    1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+			expected: "1.00 EB",
+		},
+		{
+			name:     "1.5 exabytes",
+			bytes:    1024*1024*1024*1024*1024*1024 + 512*1024*1024*1024*1024*1024,
+			expected: "1.50 EB",
+		},
 	}
 
 	for _, tt := range tests {

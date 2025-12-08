@@ -85,6 +85,25 @@ func TestMovieParser_Parse(t *testing.T) {
 			wantTitle: "Simple Movie",
 			wantYear:  2021,
 		},
+		// Test years beyond 2100 (BUG-EDGE-001 fix validation)
+		{
+			name:      "movie with year 2101",
+			filename:  "Future.Film.2101.1080p.mkv",
+			wantTitle: "Future Film",
+			wantYear:  2101,
+		},
+		{
+			name:      "movie with year 2150",
+			filename:  "SciFi.Movie.2150.4K.mkv",
+			wantTitle: "SciFi Movie",
+			wantYear:  2150,
+		},
+		{
+			name:      "movie with year 2199",
+			filename:  "The.Last.Movie.2199.mkv",
+			wantTitle: "The Last Movie",
+			wantYear:  2199,
+		},
 	}
 
 	parser := NewMovieParser()

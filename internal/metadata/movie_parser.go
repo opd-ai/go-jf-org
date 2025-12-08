@@ -31,11 +31,12 @@ type movieParser struct {
 func NewMovieParser() MovieParser {
 	return &movieParser{
 		// Capture title (non-greedy) and year
-		titleYearPattern: regexp.MustCompile(`^(.+?)[\[\(._\s]+(18[5-9]\d|19\d{2}|20\d{2}|2100)[\]\)._\s]*`),
+		// Supports years 1850-2199 (extended to cover 21st century beyond 2100)
+		titleYearPattern: regexp.MustCompile(`^(.+?)[\[\(._\s]+(18[5-9]\d|19\d{2}|20\d{2}|21\d{2})[\]\)._\s]*`),
 		qualityPattern:   regexp.MustCompile(`(?i)(4K|8K|2160p|1080p|720p|480p|UHD|HD)`),
 		sourcePattern:    regexp.MustCompile(`(?i)(BluRay|Blu-Ray|BRRip|BDRip|WEB-DL|WEBRip|WEBDL|DVDRip|DVD-Rip|HDTV|PDTV|HDRip)`),
 		codecPattern:     regexp.MustCompile(`(?i)(x264|x265|h264|h265|HEVC|AVC|XviD)`),
-		yearPattern:      regexp.MustCompile(`[\[\(._\s](18[5-9]\d|19\d{2}|20\d{2}|2100)[\]\)._\s]`),
+		yearPattern:      regexp.MustCompile(`[\[\(._\s](18[5-9]\d|19\d{2}|20\d{2}|21\d{2})[\]\)._\s]`),
 	}
 }
 

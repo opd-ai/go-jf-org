@@ -266,7 +266,14 @@ func (os *OperationStats) Summary() string {
 	os.mu.RLock()
 	defer os.mu.RUnlock()
 	
-	duration := os.Duration()
+	// Calculate duration inline to avoid nested locking
+	var duration time.Duration
+	if os.EndTime.IsZero() {
+		duration = time.Since(os.StartTime)
+	} else {
+		duration = os.EndTime.Sub(os.StartTime)
+	}
+	
 	summary := fmt.Sprintf("%s Statistics:\n", os.Name)
 	summary += fmt.Sprintf("  Total: %d\n", os.Total)
 	summary += fmt.Sprintf("  Completed: %d\n", os.Completed)

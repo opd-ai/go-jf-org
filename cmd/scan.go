@@ -186,7 +186,6 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 			// Enrich metadata if enrichers are available
 			if metadata != nil {
-				var enriched bool
 				switch mediaType {
 				case types.MediaTypeMovie:
 					if tmdbEnricher != nil {
@@ -196,7 +195,6 @@ func runScan(cmd *cobra.Command, args []string) error {
 							stats.Increment("enrichment_failures")
 						} else {
 							stats.Increment("enrichment_success")
-							enriched = true
 						}
 						enrichTimer.Stop()
 					}
@@ -208,7 +206,6 @@ func runScan(cmd *cobra.Command, args []string) error {
 							stats.Increment("enrichment_failures")
 						} else {
 							stats.Increment("enrichment_success")
-							enriched = true
 						}
 						enrichTimer.Stop()
 					}
@@ -220,7 +217,6 @@ func runScan(cmd *cobra.Command, args []string) error {
 							stats.Increment("enrichment_failures")
 						} else {
 							stats.Increment("enrichment_success")
-							enriched = true
 						}
 						enrichTimer.Stop()
 					}
@@ -232,12 +228,10 @@ func runScan(cmd *cobra.Command, args []string) error {
 							stats.Increment("enrichment_failures")
 						} else {
 							stats.Increment("enrichment_success")
-							enriched = true
 						}
 						enrichTimer.Stop()
 					}
 				}
-				_ = enriched // Silence unused variable warning
 			}
 			
 			// Update progress if tracking

@@ -1,8 +1,8 @@
 # Project Status
 
 **Last Updated:** 2025-12-08  
-**Version:** 0.6.0-dev  
-**Status:** Phase 1-4 Complete (Foundation + Metadata + Organization + Safety + Verify) - Active Development
+**Version:** 0.7.0-dev  
+**Status:** Phase 1-4 Complete (Foundation + Metadata + Organization + Safety + Verify) - **Phase 2 100% Complete** - Active Development
 
 ## What Has Been Delivered
 
@@ -80,13 +80,14 @@ This repository contains a comprehensive implementation plan and **working Phase
 - [x] Unit tests for scanner and config
 - [x] All CLI commands (scan, organize, preview)
 
-#### Phase 2: Metadata Extraction (40% complete) 🚧
+#### Phase 2: Metadata Extraction (100% complete) ✅
 - [x] Filename parsers (movies and TV shows)
 - [x] Media type detector (movies vs TV vs music vs books)
-- [ ] TMDB API client
-- [ ] MusicBrainz API client
-- [ ] OpenLibrary API client
-- [ ] Caching system
+- [x] **TMDB API client for movies and TV shows**
+- [x] **MusicBrainz API client for music**
+- [x] **OpenLibrary API client for books**
+- [x] **Caching system with 24h TTL for all APIs**
+- [x] **Rate limiting (40 req/10s for TMDB, 1 req/s for MusicBrainz)**
 
 #### Phase 3: File Organization (100% complete) ✅
 - [x] Jellyfin naming implementation
@@ -125,6 +126,7 @@ The tool is **fully functional for organizing media files with NFO generation**.
 
 **What you can do:**
 - Scan directories to identify media files and view metadata
+- **Enrich metadata with external APIs (TMDB for movies/TV, MusicBrainz for music, OpenLibrary for books)**
 - Preview organization plans before executing
 - Organize movies and TV shows into Jellyfin-compatible structure
 - **Generate Jellyfin-compatible NFO metadata files (--create-nfo flag)**
@@ -136,16 +138,16 @@ The tool is **fully functional for organizing media files with NFO generation**.
 - List and inspect transaction history
 
 **What you cannot do yet:**
-- Enrich metadata with external APIs (TMDB, MusicBrainz) - planned for Phase 2 completion
 - Organize music and book collections - basic support exists, NFO generation coming in future phases
+- Download artwork (planned for Phase 5)
 
 **Try it out:**
 ```bash
 # Build the tool
 make build
 
-# Scan a directory
-./bin/go-jf-org scan /path/to/media -v
+# Scan a directory with metadata enrichment
+./bin/go-jf-org scan /path/to/media --enrich -v
 
 # Preview organization with NFO files
 ./bin/go-jf-org preview /path/to/media --dest /organized --create-nfo -v
@@ -215,14 +217,19 @@ make test
 - [x] **Implement rollback functionality**
 - [x] **Add rollback CLI command**
 
-### Medium Term (Next 2-4 weeks)
-- [ ] Implement NFO file generation
-- [ ] Add verify command
-- [ ] Implement TMDB API integration
-- [ ] Add caching layer
+### Medium Term (Completed ✅)
+- [x] ~~Implement NFO file generation~~
+- [x] ~~Add verify command~~
+- [x] ~~Implement TMDB API integration~~
+- [x] ~~Implement MusicBrainz API integration~~
+- [x] ~~Implement OpenLibrary API integration~~
+- [x] ~~Add caching layer~~
 
-### Long Term (1-3 months)
-- [ ] Complete metadata extraction for all media types
+### Long Term (Next 1-2 months)
+- [ ] NFO generation for music and books
+- [ ] Artwork downloads for all media types
+- [ ] Progress indicators and statistics
+- [ ] Performance optimization
 - [ ] Documentation and examples
 - [ ] First stable release (v1.0.0)
 
@@ -233,8 +240,8 @@ make test
 | Documentation | ✅ Excellent |
 | Architecture | ✅ Complete |
 | Code Structure | ✅ Ready |
-| Implementation | 🟢 Active (Phase 1: 100%, Phase 2: 40%, **Phase 3: 100%**, **Phase 4: 100%**) |
-| Testing | ✅ Excellent (100+ tests, 100% pass, >82% coverage) |
+| Implementation | 🟢 Active (Phase 1: 100%, **Phase 2: 100%**, **Phase 3: 100%**, **Phase 4: 100%**) |
+| Testing | ✅ Excellent (125+ tests, 100% pass, >80% coverage) |
 | CI/CD | 🔴 Not Started |
 
 ## Key Documents
@@ -243,7 +250,7 @@ make test
 |----------|---------|--------|
 | [README.md](README.md) | Project overview | ✅ Complete |
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Full architecture and plan | ✅ Complete |
-| [PHASE2_IMPLEMENTATION_SUMMARY.md](PHASE2_IMPLEMENTATION_SUMMARY.md) | Phase 2 detailed summary | ✅ Complete |
+| [PHASE2_COMPLETION_SUMMARY.md](PHASE2_COMPLETION_SUMMARY.md) | **Phase 2 completion (MusicBrainz & OpenLibrary)** | **✅ Complete** |
 | [PHASE3_IMPLEMENTATION_SUMMARY.md](PHASE3_IMPLEMENTATION_SUMMARY.md) | Phase 3 detailed summary | ✅ Complete |
 | [PHASE4_IMPLEMENTATION_SUMMARY.md](PHASE4_IMPLEMENTATION_SUMMARY.md) | Phase 4 detailed summary | ✅ Complete |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contributor guide | ✅ Complete |
@@ -264,26 +271,31 @@ make test
 
 The immediate next steps for development:
 
-1. **Optional: Complete Phase 3 with NFO Generation** (Medium Priority)
-   - Implement NFO XML generation for movies
-   - Implement NFO generation for TV shows
-   - Add `--create-nfo` flag to organize command
+1. **Phase 5: Polish & User Experience** (High Priority)
+   - Progress indicators for long operations
+   - Statistics reporting (files processed, time taken, etc.)
+   - Performance optimization for large collections
+   - Enhanced error messages and user guidance
 
-2. **Phase 2 Completion: External APIs** (Medium Priority)
-   - Implement TMDB API client for movies/TV
-   - Add API response caching (24h TTL)
-   - Implement rate limiting (40 req/10s for TMDB)
-   - Add MusicBrainz and OpenLibrary clients
+2. **NFO Generation for Music and Books** (Medium Priority)
+   - Implement NFO XML generation for music albums
+   - Implement NFO generation for books
+   - Integrate with organize command
 
-3. **Testing Infrastructure** (Low Priority)
+3. **Artwork Downloads** (Medium Priority)
+   - Download and save poster images from TMDB
+   - Download cover art from Cover Art Archive (MusicBrainz)
+   - Download book covers from OpenLibrary
+   - Integrate with organize command (`--download-artwork` flag)
+
+4. **Testing Infrastructure** (Low Priority)
    - Add integration tests for full workflows
    - Set up CI/CD pipeline
    - Increase test coverage to >90%
 
-4. **Polish and Release** (Future)
-   - Progress indicators for long operations
-   - Statistics reporting
-   - Performance optimization
+5. **Documentation & Release** (Future)
+   - Comprehensive user guide
+   - Video tutorials
    - First stable release (v1.0.0)
 
 ---

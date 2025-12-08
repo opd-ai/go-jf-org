@@ -9,6 +9,9 @@ import (
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
+// spaceRegex is compiled once for performance in SanitizeFilename
+var spaceRegex = regexp.MustCompile(`\s+`)
+
 // Naming provides Jellyfin-compatible naming conventions for media files
 type Naming struct{}
 
@@ -218,7 +221,6 @@ func SanitizeFilename(s string) string {
 	cleaned = strings.Trim(cleaned, ".")
 
 	// Collapse multiple spaces into single space
-	spaceRegex := regexp.MustCompile(`\s+`)
 	cleaned = spaceRegex.ReplaceAllString(cleaned, " ")
 
 	return cleaned

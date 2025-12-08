@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/opd-ai/go-jf-org/internal/organizer"
-	"github.com/opd-ai/go-jf-org/internal/scanner"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
@@ -60,37 +59,15 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	}
 
 	// Determine destination root
-	destRoot := organizeDest
-	if destRoot == "" {
-		// Try to get from config based on media type
-		if organizeMediaType == "movie" && cfg.Destinations.Movies != "" {
-			destRoot = cfg.Destinations.Movies
-		} else if organizeMediaType == "tv" && cfg.Destinations.TV != "" {
-			destRoot = cfg.Destinations.TV
-		} else if organizeMediaType == "music" && cfg.Destinations.Music != "" {
-			destRoot = cfg.Destinations.Music
-		} else if organizeMediaType == "book" && cfg.Destinations.Books != "" {
-			destRoot = cfg.Destinations.Books
-		} else {
-			return fmt.Errorf("destination directory required (use --dest or configure in config file)")
-		}
+	destRoot, err := getDestinationRoot(organizeMediaType, organizeDest)
+	if err != nil {
+		return err
 	}
 
 	// Parse media type filter
-	var mediaTypeFilter types.MediaType = types.MediaTypeUnknown
-	if organizeMediaType != "" {
-		switch organizeMediaType {
-		case "movie":
-			mediaTypeFilter = types.MediaTypeMovie
-		case "tv":
-			mediaTypeFilter = types.MediaTypeTV
-		case "music":
-			mediaTypeFilter = types.MediaTypeMusic
-		case "book":
-			mediaTypeFilter = types.MediaTypeBook
-		default:
-			return fmt.Errorf("invalid media type: %s (must be movie, tv, music, or book)", organizeMediaType)
-		}
+	mediaTypeFilter, err := parseMediaTypeFilter(organizeMediaType)
+	if err != nil {
+		return err
 	}
 
 	if organizeDryRun {
@@ -105,12 +82,7 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 		Msg("Starting organization")
 
 	// Create scanner
-	s := scanner.NewScanner(
-		cfg.Filters.VideoExtensions,
-		cfg.Filters.AudioExtensions,
-		cfg.Filters.BookExtensions,
-		10*1024*1024, // 10MB minimum
-	)
+	s := createScanner()
 
 	// Scan for files
 	fmt.Printf("Scanning %s...\n", absPath)

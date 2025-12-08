@@ -110,7 +110,12 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 				continue
 			case "rename":
 				// Add suffix to destination
-				plan.DestinationPath = findAvailableName(plan.DestinationPath)
+				newPath, err := findAvailableName(plan.DestinationPath)
+				if err != nil {
+					log.Error().Err(err).Str("file", plan.SourcePath).Msg("Failed to find available name")
+					continue
+				}
+				plan.DestinationPath = newPath
 				log.Info().Str("file", plan.SourcePath).Str("new_dest", plan.DestinationPath).Msg("Renamed due to conflict")
 			default:
 				log.Warn().Str("file", plan.SourcePath).Msg("Unknown conflict strategy, skipping")
@@ -162,7 +167,8 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 }
 
 // findAvailableName finds an available filename by adding a suffix
-func findAvailableName(path string) string {
+// Returns an error if no available name can be found after 1000 attempts
+func findAvailableName(path string) (string, error) {
 	dir := filepath.Dir(path)
 	base := filepath.Base(path)
 	ext := filepath.Ext(base)
@@ -172,12 +178,12 @@ func findAvailableName(path string) string {
 		newName := fmt.Sprintf("%s-%d%s", name, i, ext)
 		newPath := filepath.Join(dir, newName)
 		if _, err := os.Stat(newPath); os.IsNotExist(err) {
-			return newPath
+			return newPath, nil
 		}
 	}
 
-	// If we somehow exhaust 1000 tries, return original with timestamp
-	return path + ".duplicate"
+	// If we somehow exhaust 1000 tries, return error
+	return "", fmt.Errorf("could not find available filename after 1000 attempts for %s", path)
 }
 
 // ValidatePlan checks if a plan can be executed safely

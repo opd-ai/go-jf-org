@@ -292,7 +292,10 @@ func TestFindAvailableName(t *testing.T) {
 	basePath := filepath.Join(tmpDir, "movie.mkv")
 	
 	// First call should return -1 suffix
-	result1 := findAvailableName(basePath)
+	result1, err := findAvailableName(basePath)
+	if err != nil {
+		t.Fatalf("findAvailableName() error = %v", err)
+	}
 	expected1 := filepath.Join(tmpDir, "movie-1.mkv")
 	if result1 != expected1 {
 		t.Errorf("findAvailableName() = %q, want %q", result1, expected1)
@@ -302,7 +305,10 @@ func TestFindAvailableName(t *testing.T) {
 	createTestFile(t, result1)
 	
 	// Second call should return -2 suffix
-	result2 := findAvailableName(basePath)
+	result2, err := findAvailableName(basePath)
+	if err != nil {
+		t.Fatalf("findAvailableName() error = %v", err)
+	}
 	expected2 := filepath.Join(tmpDir, "movie-2.mkv")
 	if result2 != expected2 {
 		t.Errorf("findAvailableName() = %q, want %q", result2, expected2)

@@ -27,6 +27,13 @@ type Violation struct {
 	MediaType  types.MediaType
 }
 
+// Common regex patterns compiled once for performance
+var (
+	yearPattern    = regexp.MustCompile(`^(.+?)\s+\((\d{4})\)$`)
+	seasonPattern  = regexp.MustCompile(`^Season\s+(\d{2})$`)
+	episodePattern = regexp.MustCompile(`^(.+?)\s+-\s+S(\d{2})E(\d{2})(?:\s+-\s+(.+?))?(?:\s+-\s+\d{3,4}p)?\.(.+)$`)
+)
+
 // MovieRules contains verification rules for movie directories
 type MovieRules struct{}
 
@@ -38,8 +45,7 @@ func (r *MovieRules) VerifyMovie(dirPath string) []Violation {
 	dirName := filepath.Base(dirPath)
 	
 	// Check directory naming: "Movie Name (Year)"
-	moviePattern := regexp.MustCompile(`^(.+?)\s+\((\d{4})\)$`)
-	if !moviePattern.MatchString(dirName) {
+	if !yearPattern.MatchString(dirName) {
 		violations = append(violations, Violation{
 			Severity:   SeverityError,
 			Path:       dirPath,
@@ -157,7 +163,6 @@ func (r *TVRules) VerifyTVShow(showPath string) []Violation {
 		return violations
 	}
 	
-	seasonPattern := regexp.MustCompile(`^Season\s+(\d{2})$`)
 	var seasonDirs []string
 	var hasShowNFO bool
 	
@@ -230,9 +235,6 @@ func (r *TVRules) verifySeason(seasonPath, showName string) []Violation {
 		".mkv": true, ".mp4": true, ".avi": true,
 		".m4v": true, ".ts": true, ".webm": true,
 	}
-	
-	// Expected pattern: "Show Name - S##E## - Episode Title.ext"
-	episodePattern := regexp.MustCompile(`^(.+?)\s+-\s+S(\d{2})E(\d{2})(?:\s+-\s+(.+?))?(?:\s+-\s+\d{3,4}p)?\.(.+)$`)
 	
 	var videoFiles []string
 	var hasSeasonNFO bool
@@ -315,13 +317,12 @@ func (r *MusicRules) VerifyMusic(artistPath string) []Violation {
 	}
 	
 	// Expected: "Album Name (Year)" directories
-	albumPattern := regexp.MustCompile(`^(.+?)\s+\((\d{4})\)$`)
 	var albumDirs []string
 	
 	for _, entry := range entries {
 		if entry.IsDir() {
 			dirName := entry.Name()
-			if albumPattern.MatchString(dirName) {
+			if yearPattern.MatchString(dirName) {
 				albumDirs = append(albumDirs, dirName)
 				// Could verify album structure, but keeping it simple for now
 			} else {
@@ -375,14 +376,13 @@ func (r *BookRules) VerifyBook(authorPath string) []Violation {
 	}
 	
 	// Expected: "Book Title (Year)" directories or direct book files
-	bookPattern := regexp.MustCompile(`^(.+?)\s+\((\d{4})\)$`)
 	var bookDirs []string
 	var bookFiles []string
 	
 	for _, entry := range entries {
 		if entry.IsDir() {
 			dirName := entry.Name()
-			if bookPattern.MatchString(dirName) {
+			if yearPattern.MatchString(dirName) {
 				bookDirs = append(bookDirs, dirName)
 			} else {
 				violations = append(violations, Violation{

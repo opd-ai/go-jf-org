@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -179,8 +180,12 @@ func (v *Verifier) inferMediaType(dirPath, dirName string) types.MediaType {
 	for _, entry := range entries {
 		if entry.IsDir() {
 			subDirName := entry.Name()
-			// "Season ##" pattern indicates TV show
-			if len(subDirName) >= 8 && subDirName[:6] == "Season" {
+			// "Season ##" pattern indicates TV show - check with regex for safety
+			if strings.HasPrefix(subDirName, "Season ") && len(subDirName) >= 9 {
+				return types.MediaTypeTV
+			}
+			// Also check Specials folder
+			if subDirName == "Specials" {
 				return types.MediaTypeTV
 			}
 		}
@@ -216,8 +221,8 @@ func (v *Verifier) inferMediaType(dirPath, dirName string) types.MediaType {
 	// Determine type based on content
 	if hasVideoFile {
 		// Could be movie or TV - check directory name for year pattern
-		// "Movie Name (Year)" pattern
-		if len(dirName) > 6 && dirName[len(dirName)-5] == '(' && dirName[len(dirName)-1] == ')' {
+		// "Movie Name (Year)" pattern using regex for safety
+		if yearPattern.MatchString(dirName) {
 			return types.MediaTypeMovie
 		}
 		// Default to movie if no season folders

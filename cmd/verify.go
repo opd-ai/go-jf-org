@@ -40,7 +40,7 @@ Use --json for machine-readable output.`,
 
 func init() {
 	rootCmd.AddCommand(verifyCmd)
-	verifyCmd.Flags().BoolVar(&verifyStrict, "strict", false, "Fail on any violations (exit code 1 if issues found)")
+	verifyCmd.Flags().BoolVar(&verifyStrict, "strict", false, "Fail with exit code 1 if errors are found")
 	verifyCmd.Flags().StringVar(&verifyMediaType, "type", "", "Verify specific media type (movie, tv, music, book)")
 	verifyCmd.Flags().BoolVar(&verifyJSONOutput, "json", false, "Output results as JSON")
 }
@@ -176,11 +176,9 @@ func outputHuman(result *verifier.Result, strict bool) error {
 
 	fmt.Printf("✗ Structure has %d error(s) that should be fixed.\n", result.ErrorCount)
 
-	// Exit with error code in strict mode
+	// Return error in strict mode for errors (not warnings)
 	if strict {
-		if result.HasIssues() {
-			os.Exit(1)
-		}
+		return fmt.Errorf("verification failed with %d error(s)", result.ErrorCount)
 	}
 
 	return nil

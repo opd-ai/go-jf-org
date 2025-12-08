@@ -243,9 +243,12 @@ func (v *Validator) checkDiskSpace(path string, requiredBytes uint64) error {
 		requiredBytes = v.minFreeSpace
 	}
 
+	// Note: syscall.Statfs_t is Unix-specific
+	// On Windows, this check will be skipped
 	var stat syscall.Statfs_t
 	if err := syscall.Statfs(path, &stat); err != nil {
-		// If we can't check disk space, just warn and continue
+		// If we can't check disk space (e.g., on Windows), just continue
+		// This is a best-effort check, not a strict requirement
 		return nil
 	}
 

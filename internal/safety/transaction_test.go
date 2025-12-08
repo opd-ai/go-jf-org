@@ -1,8 +1,10 @@
 package safety
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -314,8 +316,11 @@ func TestGetDefaultLogDir(t *testing.T) {
 		t.Error("Default log dir should be absolute path")
 	}
 	
-	// Just log the directory for verification
-	t.Logf("Default log dir: %s", dir)
+	// Verify it ends with the expected path
+	if !strings.HasSuffix(dir, filepath.Join(".go-jf-org", "txn")) {
+		t.Logf("Default log dir: %s", dir)
+		t.Error("Default log dir does not end with .go-jf-org/txn")
+	}
 }
 
 func TestConcurrentTransactions(t *testing.T) {
@@ -324,12 +329,20 @@ func TestConcurrentTransactions(t *testing.T) {
 	tm, _ := NewTransactionManager(logDir)
 
 	// Create multiple transactions concurrently
-	done := make(chan bool, 5)
+	type result struct {
+		err error
+	}
+	results := make(chan result, 5)
+	
 	for i := 0; i < 5; i++ {
 		go func() {
+			var res result
+			
 			txn, err := tm.Begin()
 			if err != nil {
-				t.Errorf("Failed to begin transaction: %v", err)
+				res.err = fmt.Errorf("failed to begin transaction: %w", err)
+				results <- res
+				return
 			}
 			
 			op := types.Operation{
@@ -340,20 +353,27 @@ func TestConcurrentTransactions(t *testing.T) {
 			}
 			
 			if err := tm.AddOperation(txn, op); err != nil {
-				t.Errorf("Failed to add operation: %v", err)
+				res.err = fmt.Errorf("failed to add operation: %w", err)
+				results <- res
+				return
 			}
 			
 			if err := tm.Complete(txn); err != nil {
-				t.Errorf("Failed to complete transaction: %v", err)
+				res.err = fmt.Errorf("failed to complete transaction: %w", err)
+				results <- res
+				return
 			}
 			
-			done <- true
+			results <- res
 		}()
 	}
 
-	// Wait for all goroutines
+	// Wait for all goroutines and check for errors
 	for i := 0; i < 5; i++ {
-		<-done
+		res := <-results
+		if res.err != nil {
+			t.Error(res.err)
+		}
 	}
 
 	// Verify all transactions were created

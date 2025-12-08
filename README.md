@@ -163,38 +163,84 @@ go-jf-org verify /media/jellyfin/movies --strict
 
 ### Rollback
 ```bash
+# List all transactions
+go-jf-org rollback --list
+
+# Show transaction details
+go-jf-org rollback <transaction-id> --show
+
 # Undo an organization operation
 go-jf-org rollback <transaction-id>
+```
+
+**Example:**
+```bash
+# Organize files
+$ go-jf-org organize /media/unsorted
+✓ Successfully organized: 10 files
+Transaction ID: d8f309ee07381295
+
+# Review what was done
+$ go-jf-org rollback d8f309ee07381295 --show
+Transaction: d8f309ee07381295
+Status:      completed
+Operations:  10
+...
+
+# Undo if needed
+$ go-jf-org rollback d8f309ee07381295
+✓ Rollback completed successfully
 ```
 
 ## Safety Features
 
 ### Transaction Logging
-Every operation is logged before execution:
+Every organization operation is automatically logged to `~/.go-jf-org/txn/` before execution:
 ```json
 {
-  "transaction_id": "abc-123",
+  "id": "d8f309ee07381295",
+  "timestamp": "2025-12-08T03:48:36Z",
   "operations": [
     {
       "type": "move",
-      "source": "/downloads/movie.mkv",
-      "destination": "/media/movies/Movie (2023)/Movie (2023).mkv"
+      "source": "/downloads/The.Matrix.1999.mkv",
+      "destination": "/media/movies/The Matrix (1999)/The Matrix (1999).mkv",
+      "status": "completed"
     }
-  ]
+  ],
+  "status": "completed"
 }
 ```
 
+**Transaction Features:**
+- Cryptographically random transaction IDs
+- Complete operation history
+- Status tracking (pending, completed, failed, rolled_back)
+- Automatic cleanup of empty directories on rollback
+
 ### Rollback Support
-All operations can be reversed:
+All completed or failed transactions can be reversed:
 ```bash
-go-jf-org rollback abc-123
+# Rollback moves files back to original locations
+go-jf-org rollback <transaction-id>
+
+# Disable transaction logging (not recommended)
+go-jf-org organize /media/unsorted --no-transaction
 ```
+
+**Rollback Capabilities:**
+- Reverses file moves in reverse order
+- Removes created files (NFO, etc.)
+- Cleans up empty directories
+- Handles edge cases (missing files, conflicts)
+- Cannot rollback if files were externally modified
 
 ### Validation Checks
 Before any operation:
 - ✓ Source file exists and is readable
-- ✓ Destination is writable
-- ✓ Sufficient disk space
+- ✓ Destination directory is writable
+- ✓ Sufficient disk space (file size + 10% buffer)
+- ✓ No unsafe characters in paths
 - ✓ No conflicts (or resolve per strategy)
 
 ### Conflict Resolution

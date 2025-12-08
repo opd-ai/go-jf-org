@@ -95,6 +95,12 @@ func (o *Organizer) PlanOrganization(files []string, destRoot string, mediaTypeF
 			log.Warn().Err(err).Str("file", file).Msg("Failed to parse metadata, skipping")
 			continue
 		}
+		
+		// Defensive nil check - ensures safety even if parsers change in the future
+		if meta == nil {
+			log.Warn().Str("file", file).Msg("Parser returned nil metadata, skipping")
+			continue
+		}
 
 		// Build destination path
 		ext := filepath.Ext(file)

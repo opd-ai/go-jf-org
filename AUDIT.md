@@ -21,7 +21,7 @@
 **File:** internal/util/progress.go:196-217  
 **Severity:** High  
 **Status:** ✅ Resolved  
-**Fixed:** 2025-12-08 (commit: pending)  
+**Fixed:** 2025-12-08 (commit: 3d255a8)  
 **Resolution:** Added sync.Once to ensure channel is closed exactly once, preventing race conditions on concurrent Stop() calls.
 
 ### Description
@@ -77,7 +77,9 @@ func (s *Spinner) Stop() {
 **ID:** BUG-NIL-001  
 **File:** internal/organizer/organizer.go:93-97  
 **Severity:** High  
-**Status:** Unresolved
+**Status:** ✅ Resolved  
+**Fixed:** 2025-12-08 (commit: pending)  
+**Resolution:** Added defensive nil check after error handling to protect against future parser changes that might return (nil, error).
 
 ### Description
 In PlanOrganization(), the parser.Parse() call can return (*Metadata, error). If Parse returns a non-nil error but also returns nil metadata, the subsequent code at lines 100+ will attempt to access metadata.TVMetadata or metadata.MovieMetadata without checking if metadata itself is nil, causing a panic.
@@ -265,8 +267,15 @@ README claims "planning phase" but codebase is at v0.8.0-dev with extensive impl
 
 ## Resolution Log
 
-### 2025-12-08 - BUG-RACE-001 Fixed
+### 2025-12-08 - BUG-NIL-001 Fixed
 **Commit:** (pending)  
+**Bug:** Potential Nil Pointer Dereference in Metadata Parsing  
+**Root Cause:** While current parsers always return non-nil metadata, the code didn't check for nil before using the metadata object. This created a fragile dependency on parser implementation details.  
+**Fix:** Added defensive nil check after error handling: `if meta == nil { log.Warn()...; continue }`. This guards against future parser modifications that might return (nil, error).  
+**Verification:** All organizer tests pass. Code now safely handles nil metadata with proper logging and continuation to next file.
+
+### 2025-12-08 - BUG-RACE-001 Fixed
+**Commit:** 3d255a8  
 **Bug:** Race Condition in Spinner.Stop()  
 **Root Cause:** The select statement checking if channel was closed had a race window where two goroutines could both attempt to close the channel.  
 **Fix:** Added `sync.Once` field to Spinner struct. The channel close operation is now wrapped in `stopOnce.Do()`, guaranteeing exactly-once semantics even with concurrent Stop() calls. The sync.Once is reset in Start() for reusability.  

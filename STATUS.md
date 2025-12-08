@@ -1,8 +1,8 @@
 # Project Status
 
 **Last Updated:** 2025-12-08  
-**Version:** 0.3.0-dev  
-**Status:** Phase 1-3 (Foundation + Metadata + Organization) - Active Development
+**Version:** 0.4.0-dev  
+**Status:** Phase 1-4 (Foundation + Metadata + Organization + Safety) - Active Development
 
 ## What Has Been Delivered
 
@@ -96,11 +96,13 @@ This repository contains a comprehensive implementation plan and **working Phase
 - [x] Preview command (dry-run)
 - [ ] NFO file generation
 
-#### Phase 4: Safety & Transactions (0% complete)
-- [ ] Transaction logging
-- [ ] Rollback functionality
-- [ ] Validation checks
-- [ ] Verify command
+#### Phase 4: Safety & Transactions (100% complete) ✅
+- [x] Transaction logging system
+- [x] Rollback functionality with CLI command
+- [x] Pre-operation validation checks
+- [x] Transaction list and show commands
+- [x] Integration with organize command
+- [ ] Verify command (deferred to future phase)
 
 #### Phase 5: Polish (0% complete)
 - [ ] Progress indicators
@@ -124,10 +126,12 @@ The tool is **functional for organizing media files**.
 - Organize movies and TV shows into Jellyfin-compatible structure
 - Handle conflicts with skip or rename strategies
 - Use dry-run mode for safety testing
+- **NEW**: Automatic transaction logging for all organize operations
+- **NEW**: Rollback completed organization operations
+- **NEW**: List and inspect transaction history
 
 **What you cannot do yet:**
 - Generate NFO files (not yet implemented)
-- Rollback operations (not yet implemented)
 - Enrich metadata with external APIs (not yet implemented)
 
 **Try it out:**
@@ -144,8 +148,17 @@ make build
 # Organize with dry-run
 ./bin/go-jf-org organize /path/to/media --dest /organized --dry-run
 
-# Actually organize files
+# Actually organize files (with automatic transaction logging)
 ./bin/go-jf-org organize /path/to/media --dest /organized
+
+# List transaction history
+./bin/go-jf-org rollback --list
+
+# View transaction details
+./bin/go-jf-org rollback <transaction-id> --show
+
+# Rollback if needed
+./bin/go-jf-org rollback <transaction-id>
 
 # Organize only movies
 ./bin/go-jf-org organize /path/to/media --dest /organized --type movie
@@ -188,18 +201,18 @@ make test
 - [x] ~~Build file organization logic~~
 - [x] ~~Add preview command (dry-run)~~
 - [x] ~~Add organize command~~
+- [x] **Add transaction logging system**
+- [x] **Implement rollback functionality**
+- [x] **Add rollback CLI command**
 
 ### Medium Term (Next 2-4 weeks)
 - [ ] Implement NFO file generation
-- [ ] Add transaction logging system
-- [ ] Implement rollback functionality
 - [ ] Add verify command
 - [ ] Implement TMDB API integration
 - [ ] Add caching layer
 
 ### Long Term (1-3 months)
 - [ ] Complete metadata extraction for all media types
-- [ ] Comprehensive safety mechanisms
 - [ ] Documentation and examples
 - [ ] First stable release (v1.0.0)
 
@@ -210,8 +223,8 @@ make test
 | Documentation | ✅ Excellent |
 | Architecture | ✅ Complete |
 | Code Structure | ✅ Ready |
-| Implementation | 🟢 In Progress (Phase 1: 100%, Phase 2: 40%, Phase 3: 90%) |
-| Testing | ✅ Excellent (45 tests, 100% pass, >85% coverage) |
+| Implementation | 🟢 In Progress (Phase 1: 100%, Phase 2: 40%, Phase 3: 90%, **Phase 4: 100%**) |
+| Testing | ✅ Excellent (86 tests, 100% pass, >82% coverage) |
 | CI/CD | 🔴 Not Started |
 
 ## Key Documents
@@ -227,6 +240,7 @@ make test
 | [docs/metadata-sources.md](docs/metadata-sources.md) | API documentation | ✅ Complete |
 | [docs/examples.md](docs/examples.md) | Usage examples | ✅ Complete |
 | [docs/filename-patterns.md](docs/filename-patterns.md) | Supported filename patterns | ✅ Complete |
+| **[docs/transaction-format.md](docs/transaction-format.md)** | **Transaction logging format** | **✅ Complete** |
 
 ## Questions?
 
@@ -243,22 +257,22 @@ The immediate next steps for development:
    - Implement NFO generation for TV shows
    - Add `--create-nfo` flag to organize command
 
-2. **Phase 4: Safety Mechanisms** (High Priority)
-   - Transaction logging system (`~/.go-jf-org/txn/<id>.json`)
-   - Rollback functionality (reverse operations)
-   - Enhanced validation checks
-   - Verify command (check Jellyfin compatibility)
-
-3. **Phase 2 Completion: External APIs** (Medium Priority)
+2. **Phase 2 Completion: External APIs** (Medium Priority)
    - Implement TMDB API client for movies/TV
    - Add API response caching (24h TTL)
    - Implement rate limiting (40 req/10s for TMDB)
    - Add MusicBrainz and OpenLibrary clients
 
-4. **Testing Infrastructure** (Low Priority)
+3. **Testing Infrastructure** (Low Priority)
    - Add integration tests for full workflows
    - Set up CI/CD pipeline
    - Increase test coverage to >90%
+
+4. **Polish and Release** (Future)
+   - Progress indicators for long operations
+   - Statistics reporting
+   - Performance optimization
+   - First stable release (v1.0.0)
 
 ---
 

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/opd-ai/go-jf-org/internal/organizer"
+	"github.com/opd-ai/go-jf-org/internal/safety"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
@@ -16,6 +17,7 @@ var (
 	organizeMediaType       string
 	organizeConflictStrategy string
 	organizeDryRun          bool
+	organizeNoTransaction   bool
 )
 
 var organizeCmd = &cobra.Command{
@@ -47,6 +49,7 @@ func init() {
 	organizeCmd.Flags().StringVarP(&organizeMediaType, "type", "t", "", "filter by media type (movie, tv, music, book)")
 	organizeCmd.Flags().StringVar(&organizeConflictStrategy, "conflict", "skip", "conflict resolution strategy (skip, rename)")
 	organizeCmd.Flags().BoolVar(&organizeDryRun, "dry-run", false, "preview changes without executing")
+	organizeCmd.Flags().BoolVar(&organizeNoTransaction, "no-transaction", false, "disable transaction logging (not recommended)")
 }
 
 func runOrganize(cmd *cobra.Command, args []string) error {
@@ -98,8 +101,27 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Found %d media files\n\n", len(result.Files))
 
-	// Create organizer
-	org := organizer.NewOrganizer(organizeDryRun)
+	// Create organizer with transaction support
+	var org *organizer.Organizer
+	var tm *safety.TransactionManager
+	
+	if !organizeNoTransaction && !organizeDryRun {
+		logDir, err := safety.GetDefaultLogDir()
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to get transaction log directory, proceeding without transactions")
+			org = organizer.NewOrganizer(organizeDryRun)
+		} else {
+			tm, err = safety.NewTransactionManager(logDir)
+			if err != nil {
+				log.Warn().Err(err).Msg("Failed to initialize transaction manager, proceeding without transactions")
+				org = organizer.NewOrganizer(organizeDryRun)
+			} else {
+				org = organizer.NewOrganizerWithTransactions(organizeDryRun, tm)
+			}
+		}
+	} else {
+		org = organizer.NewOrganizer(organizeDryRun)
+	}
 
 	// Plan organization
 	fmt.Println("Planning organization...")
@@ -176,9 +198,19 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 		fmt.Println("Organizing files...")
 	}
 
-	ops, err := org.Execute(plans, organizeConflictStrategy)
-	if err != nil {
-		return fmt.Errorf("organization failed: %w", err)
+	var ops []types.Operation
+	var txnID string
+
+	if tm != nil {
+		txnID, ops, err = org.ExecuteWithTransaction(plans, organizeConflictStrategy)
+		if err != nil {
+			return fmt.Errorf("organization failed: %w", err)
+		}
+	} else {
+		ops, err = org.Execute(plans, organizeConflictStrategy)
+		if err != nil {
+			return fmt.Errorf("organization failed: %w", err)
+		}
 	}
 
 	// Count results
@@ -219,6 +251,12 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 				fmt.Printf("    Error: %v\n", op.Error)
 			}
 		}
+	}
+
+	// Display transaction ID if available
+	if txnID != "" {
+		fmt.Printf("\nTransaction ID: %s\n", txnID)
+		fmt.Printf("To rollback this operation, run: go-jf-org rollback %s\n", txnID)
 	}
 
 	// Success message

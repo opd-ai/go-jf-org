@@ -1,10 +1,12 @@
 package scanner
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/opd-ai/go-jf-org/internal/detector"
@@ -24,6 +26,8 @@ type Scanner struct {
 	detector detector.Detector
 	// Parser for extracting metadata
 	parser metadata.Parser
+	// Number of workers for concurrent scanning (0 = auto-detect)
+	numWorkers int
 }
 
 // NewScanner creates a new Scanner with the given configuration
@@ -35,7 +39,13 @@ func NewScanner(videoExts, audioExts, bookExts []string, minSize int64) *Scanner
 		minFileSize:     minSize,
 		detector:        detector.New(),
 		parser:          metadata.NewParser(),
+		numWorkers:      0, // Auto-detect
 	}
+}
+
+// SetNumWorkers sets the number of concurrent workers (0 = auto-detect based on CPU count)
+func (s *Scanner) SetNumWorkers(n int) {
+	s.numWorkers = n
 }
 
 // ScanResult contains the results of a scan operation
@@ -105,6 +115,59 @@ func (s *Scanner) Scan(rootPath string) (*ScanResult, error) {
 	}
 
 	log.Info().Int("count", len(result.Files)).Int("errors", len(result.Errors)).Msg("Scan complete")
+
+	return result, nil
+}
+
+// ScanConcurrent walks the directory tree concurrently and returns all media files
+// This method uses worker pools for better performance on large directories
+func (s *Scanner) ScanConcurrent(ctx context.Context, rootPath string) (*ScanResult, error) {
+	// Verify the path exists
+	info, err := os.Stat(rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access path: %w", err)
+	}
+
+	if !info.IsDir() {
+		return nil, fmt.Errorf("path is not a directory: %s", rootPath)
+	}
+
+	// Determine number of workers
+	numWorkers := s.numWorkers
+	if numWorkers <= 0 {
+		numWorkers = runtime.NumCPU()
+	}
+
+	log.Info().Str("path", rootPath).Int("workers", numWorkers).Msg("Starting concurrent directory scan")
+
+	// Combine all extensions
+	allExtensions := make([]string, 0, len(s.videoExtensions)+len(s.audioExtensions)+len(s.bookExtensions))
+	allExtensions = append(allExtensions, s.videoExtensions...)
+	allExtensions = append(allExtensions, s.audioExtensions...)
+	allExtensions = append(allExtensions, s.bookExtensions...)
+
+	// Create worker pool and scan
+	pool := NewWorkerPool(numWorkers, s.detector)
+	paths, sizes, err := pool.ScanConcurrent(ctx, rootPath, allExtensions)
+	if err != nil {
+		return nil, fmt.Errorf("concurrent scan failed: %w", err)
+	}
+
+	// Filter by file size
+	result := &ScanResult{
+		Files:  make([]string, 0, len(paths)),
+		Errors: make([]error, 0),
+	}
+
+	for i, path := range paths {
+		if sizes[i] >= s.minFileSize {
+			result.Files = append(result.Files, path)
+		} else {
+			log.Debug().Str("path", path).Int64("size", sizes[i]).Msg("File too small, skipping")
+		}
+	}
+
+	log.Info().Int("count", len(result.Files)).Int("workers", numWorkers).Msg("Concurrent scan complete")
 
 	return result, nil
 }

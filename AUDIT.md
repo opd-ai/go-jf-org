@@ -8,10 +8,15 @@
 
 | Category | Count | Status |
 |----------|-------|--------|
-| MISSING FEATURE | 6 | Unresolved |
-| FUNCTIONAL MISMATCH | 4 | Unresolved |
-| CRITICAL BUG | 2 | Unresolved |
-| EDGE CASE BUG | 2 | Unresolved |
+| MISSING FEATURE | 6 | Documented (non-code) |
+| FUNCTIONAL MISMATCH | 4 | Documented (non-code) |
+| CRITICAL BUG | 2 | ✅ All Fixed |
+| EDGE CASE BUG | 2 | ✅ All Fixed |
+
+**Bug Fix Summary:**
+- 4/4 code bugs fixed (100%)
+- Remaining issues are missing features and documentation gaps
+- All fixes verified with tests and manual validation
 
 ---
 
@@ -155,7 +160,7 @@ yearPattern: regexp.MustCompile(`[\[\(._\s](18[5-9]\d|19\d{2}|20\d{2}|2100)[\]\)
 **File:** internal/util/stats.go:301-319  
 **Severity:** Low  
 **Status:** ✅ Resolved  
-**Fixed:** 2025-12-08 (commit: pending)  
+**Fixed:** 2025-12-08 (commit: 879ea88)  
 **Resolution:** Extended units array to include EB, ZB, and YB, supporting sizes up to yottabytes.
 
 ### Description
@@ -272,7 +277,7 @@ README claims "planning phase" but codebase is at v0.8.0-dev with extensive impl
 ## Resolution Log
 
 ### 2025-12-08 - BUG-EDGE-002 Fixed
-**Commit:** (pending)  
+**Commit:** 879ea88  
 **Bug:** FormatBytes Bounds Check Prevents Panic but Limits Accuracy  
 **Root Cause:** Units array only included up to PB (petabyte). When handling larger values (EB+), the exp index was capped at 4, causing 1 EB to display as "1024.00 PB" instead of "1.00 EB".  
 **Fix:** Extended units array from `[]string{"KB", "MB", "GB", "TB", "PB"}` to include `"EB", "ZB", "YB"` (exabyte, zettabyte, yottabyte). Now supports accurate formatting up to yottabytes (1024^8 bytes).  

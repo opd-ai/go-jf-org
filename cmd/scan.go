@@ -103,7 +103,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 		for _, file := range result.Files {
 			mediaType := s.GetMediaType(file)
 			metadata, err := s.GetMetadata(file)
-			
+
 			if err != nil {
 				fmt.Printf("  [%s] %s (error parsing metadata: %v)\n", mediaType, file, err)
 			} else {

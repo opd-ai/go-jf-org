@@ -8,13 +8,13 @@ import (
 
 func TestMovieParser_Parse(t *testing.T) {
 	tests := []struct {
-		name         string
-		filename     string
-		wantTitle    string
-		wantYear     int
-		wantQuality  string
-		wantSource   string
-		wantCodec    string
+		name        string
+		filename    string
+		wantTitle   string
+		wantYear    int
+		wantQuality string
+		wantSource  string
+		wantCodec   string
 	}{
 		{
 			name:        "standard movie with year and quality",

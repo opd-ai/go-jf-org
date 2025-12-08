@@ -41,7 +41,7 @@ func NewScanner(videoExts, audioExts, bookExts []string, minSize int64) *Scanner
 // ScanResult contains the results of a scan operation
 type ScanResult struct {
 	// Files is a list of absolute paths to media files that match the scan criteria
-	Files  []string
+	Files []string
 	// Errors is a collection of non-fatal errors encountered during the scan
 	Errors []error
 }

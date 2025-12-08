@@ -139,41 +139,41 @@ this is not: valid: yaml: content
 }
 
 func TestParseSize(t *testing.T) {
-tests := []struct {
-name     string
-input    string
-expected int64
-wantErr  bool
-}{
-{"10MB", "10MB", 10 * 1024 * 1024, false},
-{"1GB", "1GB", 1 * 1024 * 1024 * 1024, false},
-{"512KB", "512KB", 512 * 1024, false},
-{"100B", "100B", 100, false},
-{"5", "5", 5, false},
-{"with spaces", "  10 MB  ", 10 * 1024 * 1024, false},
-{"lowercase", "10mb", 10 * 1024 * 1024, false},
-{"decimal", "1.5GB", int64(1.5 * 1024 * 1024 * 1024), false},
-{"empty string", "", 0, true},
-{"invalid format", "invalid", 0, true},
-{"invalid number", "xyzMB", 0, true},
-}
+	tests := []struct {
+		name     string
+		input    string
+		expected int64
+		wantErr  bool
+	}{
+		{"10MB", "10MB", 10 * 1024 * 1024, false},
+		{"1GB", "1GB", 1 * 1024 * 1024 * 1024, false},
+		{"512KB", "512KB", 512 * 1024, false},
+		{"100B", "100B", 100, false},
+		{"5", "5", 5, false},
+		{"with spaces", "  10 MB  ", 10 * 1024 * 1024, false},
+		{"lowercase", "10mb", 10 * 1024 * 1024, false},
+		{"decimal", "1.5GB", int64(1.5 * 1024 * 1024 * 1024), false},
+		{"empty string", "", 0, true},
+		{"invalid format", "invalid", 0, true},
+		{"invalid number", "xyzMB", 0, true},
+	}
 
-for _, tt := range tests {
-t.Run(tt.name, func(t *testing.T) {
-result, err := ParseSize(tt.input)
-if tt.wantErr {
-if err == nil {
-t.Errorf("ParseSize(%s) expected error, got nil", tt.input)
-}
-return
-}
-if err != nil {
-t.Errorf("ParseSize(%s) unexpected error: %v", tt.input, err)
-return
-}
-if result != tt.expected {
-t.Errorf("ParseSize(%s) = %d, expected %d", tt.input, result, tt.expected)
-}
-})
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseSize(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ParseSize(%s) expected error, got nil", tt.input)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("ParseSize(%s) unexpected error: %v", tt.input, err)
+				return
+			}
+			if result != tt.expected {
+				t.Errorf("ParseSize(%s) = %d, expected %d", tt.input, result, tt.expected)
+			}
+		})
+	}
 }

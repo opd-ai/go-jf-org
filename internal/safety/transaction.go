@@ -86,6 +86,15 @@ func (tm *TransactionManager) AddOperation(txn *Transaction, op types.Operation)
 	return tm.save(txn)
 }
 
+// UpdateOperation updates an existing operation in the transaction by index
+func (tm *TransactionManager) UpdateOperation(txn *Transaction, index int, op types.Operation) error {
+	if index < 0 || index >= len(txn.Operations) {
+		return fmt.Errorf("invalid operation index: %d", index)
+	}
+	txn.Operations[index] = op
+	return tm.save(txn)
+}
+
 // Complete marks a transaction as completed
 func (tm *TransactionManager) Complete(txn *Transaction) error {
 	txn.Status = TransactionStatusCompleted

@@ -10,24 +10,40 @@ import (
 	"github.com/opd-ai/go-jf-org/internal/detector"
 	"github.com/opd-ai/go-jf-org/internal/jellyfin"
 	"github.com/opd-ai/go-jf-org/internal/metadata"
+	"github.com/opd-ai/go-jf-org/internal/safety"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
 // Organizer handles file organization operations
 type Organizer struct {
-	detector detector.Detector
-	parser   metadata.Parser
-	naming   *jellyfin.Naming
-	dryRun   bool
+	detector          detector.Detector
+	parser            metadata.Parser
+	naming            *jellyfin.Naming
+	dryRun            bool
+	transactionMgr    *safety.TransactionManager
+	enableTransactions bool
 }
 
 // NewOrganizer creates a new organizer instance
 func NewOrganizer(dryRun bool) *Organizer {
 	return &Organizer{
-		detector: detector.New(),
-		parser:   metadata.NewParser(),
-		naming:   jellyfin.NewNaming(),
-		dryRun:   dryRun,
+		detector:           detector.New(),
+		parser:             metadata.NewParser(),
+		naming:             jellyfin.NewNaming(),
+		dryRun:             dryRun,
+		enableTransactions: false,
+	}
+}
+
+// NewOrganizerWithTransactions creates a new organizer with transaction logging
+func NewOrganizerWithTransactions(dryRun bool, tm *safety.TransactionManager) *Organizer {
+	return &Organizer{
+		detector:           detector.New(),
+		parser:             metadata.NewParser(),
+		naming:             jellyfin.NewNaming(),
+		dryRun:             dryRun,
+		transactionMgr:     tm,
+		enableTransactions: tm != nil,
 	}
 }
 
@@ -164,6 +180,114 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 	}
 
 	return operations, nil
+}
+
+// ExecuteWithTransaction performs the organization with transaction logging
+func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string) (string, []types.Operation, error) {
+	if !o.enableTransactions || o.transactionMgr == nil {
+		ops, err := o.Execute(plans, conflictStrategy)
+		return "", ops, err
+	}
+
+	// Begin transaction
+	txn, err := o.transactionMgr.Begin()
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	log.Info().Str("transaction", txn.ID).Int("plans", len(plans)).Msg("Starting transaction")
+
+	operations := make([]types.Operation, 0, len(plans))
+	operationIndices := make(map[int]int) // maps operations index to transaction index
+	hasErrors := false
+
+	for _, plan := range plans {
+		// Handle conflicts
+		if plan.Conflict {
+			switch conflictStrategy {
+			case "skip":
+				log.Info().Str("file", plan.SourcePath).Msg("Skipping due to conflict")
+				continue
+			case "rename":
+				// Add suffix to destination
+				newPath, err := findAvailableName(plan.DestinationPath)
+				if err != nil {
+					log.Error().Err(err).Str("file", plan.SourcePath).Msg("Failed to find available name")
+					continue
+				}
+				plan.DestinationPath = newPath
+				log.Info().Str("file", plan.SourcePath).Str("new_dest", plan.DestinationPath).Msg("Renamed due to conflict")
+			default:
+				log.Warn().Str("file", plan.SourcePath).Msg("Unknown conflict strategy, skipping")
+				continue
+			}
+		}
+
+		op := types.Operation{
+			Type:        plan.Operation,
+			Source:      plan.SourcePath,
+			Destination: plan.DestinationPath,
+			Status:      types.OperationStatusPending,
+		}
+
+		if o.dryRun {
+			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("[DRY-RUN] Would move file")
+			op.Status = types.OperationStatusCompleted
+			operations = append(operations, op)
+			txnIndex := len(txn.Operations)
+			o.transactionMgr.AddOperation(txn, op)
+			operationIndices[len(operations)-1] = txnIndex
+			continue
+		}
+
+		// Log operation before executing
+		txnIndex := len(txn.Operations)
+		o.transactionMgr.AddOperation(txn, op)
+		operationIndices[len(operations)] = txnIndex
+
+		// Create destination directory
+		destDir := filepath.Dir(plan.DestinationPath)
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			op.Status = types.OperationStatusFailed
+			op.Error = fmt.Errorf("failed to create directory: %w", err)
+			log.Error().Err(err).Str("dir", destDir).Msg("Failed to create destination directory")
+			operations = append(operations, op)
+			hasErrors = true
+			continue
+		}
+
+		// Move file
+		log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("Moving file")
+		op.Status = types.OperationStatusInProgress
+
+		if err := os.Rename(op.Source, op.Destination); err != nil {
+			op.Status = types.OperationStatusFailed
+			op.Error = fmt.Errorf("failed to move file: %w", err)
+			log.Error().Err(err).Str("source", op.Source).Str("dest", op.Destination).Msg("Failed to move file")
+			hasErrors = true
+		} else {
+			op.Status = types.OperationStatusCompleted
+			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("File moved successfully")
+		}
+
+		operations = append(operations, op)
+		
+		// Update operation status in transaction
+		if idx, ok := operationIndices[len(operations)-1]; ok {
+			o.transactionMgr.UpdateOperation(txn, idx, op)
+		}
+	}
+
+	// Complete or fail transaction
+	if hasErrors {
+		o.transactionMgr.Fail(txn, fmt.Errorf("some operations failed"))
+		log.Warn().Str("transaction", txn.ID).Msg("Transaction completed with errors")
+	} else {
+		o.transactionMgr.Complete(txn)
+		log.Info().Str("transaction", txn.ID).Msg("Transaction completed successfully")
+	}
+
+	return txn.ID, operations, nil
 }
 
 // findAvailableName finds an available filename by adding a suffix

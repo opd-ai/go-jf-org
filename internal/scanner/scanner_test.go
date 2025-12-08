@@ -112,7 +112,7 @@ func TestGetMediaType(t *testing.T) {
 		path     string
 		expected types.MediaType
 	}{
-		{"video file", "/path/to/movie.mkv", types.MediaTypeUnknown}, // Unknown because we can't distinguish movie vs TV yet
+		{"video file", "/path/to/movie.mkv", types.MediaTypeMovie}, // Now detected as movie (default for videos without specific patterns)
 		{"audio file", "/path/to/song.mp3", types.MediaTypeMusic},
 		{"book file", "/path/to/book.epub", types.MediaTypeBook},
 		{"unknown file", "/path/to/file.txt", types.MediaTypeUnknown},

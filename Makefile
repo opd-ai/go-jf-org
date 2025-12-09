@@ -50,11 +50,22 @@ clean:
 	@rm -rf $(BUILD_DIR) $(DIST_DIR) coverage.out coverage.html
 	@echo "Clean complete"
 
-## install: Install the binary to $GOPATH/bin
+## install: Install the binary system-wide
 install: build
 	@echo "Installing $(BINARY_NAME)..."
-	@cp $(BUILD_DIR)/$(BINARY_NAME) $(GOPATH)/bin/$(BINARY_NAME)
-	@echo "Installed to $(GOPATH)/bin/$(BINARY_NAME)"
+	@if [ -n "$(PREFIX)" ]; then \
+		install -d $(PREFIX)/bin; \
+		install -m 755 $(BUILD_DIR)/$(BINARY_NAME) $(PREFIX)/bin/$(BINARY_NAME); \
+		echo "Installed to $(PREFIX)/bin/$(BINARY_NAME)"; \
+	elif [ -n "$(GOPATH)" ]; then \
+		install -d $(GOPATH)/bin; \
+		install -m 755 $(BUILD_DIR)/$(BINARY_NAME) $(GOPATH)/bin/$(BINARY_NAME); \
+		echo "Installed to $(GOPATH)/bin/$(BINARY_NAME)"; \
+	else \
+		install -d /usr/local/bin; \
+		install -m 755 $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/$(BINARY_NAME); \
+		echo "Installed to /usr/local/bin/$(BINARY_NAME)"; \
+	fi
 
 ## lint: Run linter
 lint:

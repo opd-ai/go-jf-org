@@ -35,7 +35,7 @@ func init() {
 
 	previewCmd.Flags().StringVarP(&previewDest, "dest", "d", "", "destination root directory (default from config)")
 	previewCmd.Flags().StringVarP(&previewMediaType, "type", "t", "", "filter by media type (movie, tv, music, book)")
-	previewCmd.Flags().StringVar(&previewConflictStrategy, "conflict", "skip", "conflict resolution strategy (skip, rename)")
+	previewCmd.Flags().StringVar(&previewConflictStrategy, "conflict", "skip", "conflict resolution strategy (skip, rename, interactive)")
 	previewCmd.Flags().BoolVar(&previewCreateNFO, "create-nfo", false, "preview NFO file creation")
 }
 

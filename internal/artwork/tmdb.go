@@ -150,7 +150,7 @@ func (d *TMDBDownloader) DownloadTVArtwork(ctx context.Context, posterPath, dest
 	if posterPath != "" {
 		if err := d.DownloadTVPoster(ctx, posterPath, destDir); err != nil {
 			log.Warn().Err(err).Msg("Failed to download TV show poster")
-			return err
+			// Don't return error - partial success is acceptable
 		}
 	}
 

@@ -39,7 +39,7 @@ Implement artwork downloading functionality to automatically fetch and save post
   - [x] Handle MusicBrainz release IDs
   - [x] Add proper rate limiting (1 req/s for MusicBrainz)
   - [ ] Add fallback for missing artwork
-  - [ ] Add unit tests
+  - [x] Add unit tests
 
 - [x] **OpenLibrary Book Cover Downloader** (0.5 days)
   - [x] Implement book cover downloader

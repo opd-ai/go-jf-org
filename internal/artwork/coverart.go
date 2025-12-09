@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/opd-ai/go-jf-org/internal/api/musicbrainz"
 	"github.com/rs/zerolog/log"
 )
 
@@ -22,7 +23,8 @@ const (
 // CoverArtDownloader handles artwork downloads from Cover Art Archive (MusicBrainz)
 type CoverArtDownloader struct {
 	*BaseDownloader
-	imageSize ImageSize
+	imageSize   ImageSize
+	rateLimiter *musicbrainz.RateLimiter
 }
 
 // CoverArtResponse represents the Cover Art Archive API response
@@ -60,6 +62,7 @@ func NewCoverArtDownloader(config Config, size ImageSize) *CoverArtDownloader {
 	return &CoverArtDownloader{
 		BaseDownloader: NewBaseDownloader(config),
 		imageSize:      size,
+		rateLimiter:    musicbrainz.NewMusicBrainzRateLimiter(),
 	}
 }
 
@@ -98,6 +101,10 @@ func (d *CoverArtDownloader) DownloadAlbumCover(ctx context.Context, releaseID, 
 
 // getImageURL fetches the Cover Art Archive metadata and extracts the appropriate image URL
 func (d *CoverArtDownloader) getImageURL(ctx context.Context, apiURL string) (string, error) {
+	// Rate limiting - wait for token (1 req/s for MusicBrainz)
+	log.Debug().Str("url", apiURL).Msg("Waiting for rate limiter")
+	d.rateLimiter.Wait()
+
 	// Create HTTP request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	if err != nil {

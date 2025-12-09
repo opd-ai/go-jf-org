@@ -62,6 +62,32 @@ type SeasonNFO struct {
 	SeasonNumber int      `xml:"seasonnumber,omitempty"`
 }
 
+// MusicAlbumNFO represents the XML structure for a music album NFO file
+type MusicAlbumNFO struct {
+	XMLName           xml.Name `xml:"album"`
+	Title             string   `xml:"title,omitempty"`
+	Artist            string   `xml:"artist,omitempty"`
+	AlbumArtist       string   `xml:"albumartist,omitempty"`
+	Year              int      `xml:"year,omitempty"`
+	Genre             string   `xml:"genre,omitempty"`
+	Review            string   `xml:"review,omitempty"`
+	MusicBrainzID     string   `xml:"musicbrainzalbumid,omitempty"`
+	MusicBrainzReleaseID string `xml:"musicbrainzreleasegroupid,omitempty"`
+}
+
+// BookNFO represents the XML structure for a book NFO file
+type BookNFO struct {
+	XMLName     xml.Name `xml:"book"`
+	Title       string   `xml:"title,omitempty"`
+	Author      string   `xml:"author,omitempty"`
+	Year        int      `xml:"year,omitempty"`
+	Publisher   string   `xml:"publisher,omitempty"`
+	ISBN        string   `xml:"isbn,omitempty"`
+	Series      string   `xml:"series,omitempty"`
+	SeriesIndex int      `xml:"seriesindex,omitempty"`
+	Description string   `xml:"description,omitempty"`
+}
+
 // Actor represents an actor in a movie or TV show
 type Actor struct {
 	Name string `xml:"name,omitempty"`
@@ -169,6 +195,68 @@ func (g *NFOGenerator) GenerateSeasonNFO(seasonNumber int) (string, error) {
 
 	nfo := SeasonNFO{
 		SeasonNumber: seasonNumber,
+	}
+
+	return marshalNFO(nfo)
+}
+
+// GenerateMusicAlbumNFO generates an album.nfo XML file content for music
+func (g *NFOGenerator) GenerateMusicAlbumNFO(metadata *types.Metadata) (string, error) {
+	if metadata == nil {
+		return "", fmt.Errorf("metadata cannot be nil")
+	}
+
+	nfo := MusicAlbumNFO{
+		Title: metadata.Title,
+		Year:  metadata.Year,
+	}
+
+	// Add music-specific metadata if available
+	if metadata.MusicMetadata != nil {
+		mm := metadata.MusicMetadata
+		
+		nfo.Artist = mm.Artist
+		nfo.AlbumArtist = mm.AlbumArtist
+		
+		// Use AlbumArtist if set, otherwise fall back to Artist
+		if nfo.AlbumArtist == "" && nfo.Artist != "" {
+			nfo.AlbumArtist = nfo.Artist
+		}
+		
+		nfo.Genre = mm.Genre
+		nfo.MusicBrainzID = mm.MusicBrainzID
+		nfo.MusicBrainzReleaseID = mm.MusicBrainzRID
+		
+		// Use Album as title if Title is empty
+		if nfo.Title == "" && mm.Album != "" {
+			nfo.Title = mm.Album
+		}
+	}
+
+	return marshalNFO(nfo)
+}
+
+// GenerateBookNFO generates a book.nfo XML file content for books
+func (g *NFOGenerator) GenerateBookNFO(metadata *types.Metadata) (string, error) {
+	if metadata == nil {
+		return "", fmt.Errorf("metadata cannot be nil")
+	}
+
+	nfo := BookNFO{
+		Title: metadata.Title,
+		Year:  metadata.Year,
+	}
+
+	// Add book-specific metadata if available
+	if metadata.BookMetadata != nil {
+		bm := metadata.BookMetadata
+		
+		nfo.Author = bm.Author
+		nfo.Publisher = bm.Publisher
+		nfo.ISBN = bm.ISBN
+		nfo.Series = bm.Series
+		nfo.SeriesIndex = bm.SeriesIndex
+		nfo.Description = bm.Description
 	}
 
 	return marshalNFO(nfo)

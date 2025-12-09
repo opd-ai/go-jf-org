@@ -31,6 +31,9 @@ go.work.sum
 bin/
 dist/
 
+# Root level binary (from `go build`)
+/go-jf-org
+
 # Editor/IDE
 # .idea/
 # .vscode/

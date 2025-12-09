@@ -89,6 +89,54 @@ Breaking Bad/
 </season>
 ```
 
+### Music
+
+For music albums, go-jf-org creates an `album.nfo` file in the album's directory:
+
+**Directory Structure:**
+```
+Pink Floyd/
+└── The Dark Side of the Moon (1973)/
+    ├── 01 - Speak to Me.flac
+    ├── 02 - Breathe.flac
+    ├── album.nfo
+    └── folder.jpg
+```
+
+**NFO Content:**
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<album>
+    <title>The Dark Side of the Moon</title>
+    <artist>Pink Floyd</artist>
+    <albumartist>Pink Floyd</albumartist>
+    <year>1973</year>
+</album>
+```
+
+### Books
+
+For books, go-jf-org creates a `book.nfo` file in the book's directory:
+
+**Directory Structure:**
+```
+Fitzgerald, F. Scott/
+└── The Great Gatsby (1925)/
+    ├── The Great Gatsby.epub
+    ├── book.nfo
+    └── cover.jpg
+```
+
+**NFO Content:**
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<book>
+    <title>The Great Gatsby</title>
+    <author>F. Scott Fitzgerald</author>
+    <year>1925</year>
+</book>
+```
+
 ## Current Limitations
 
 ### Metadata Source
@@ -105,8 +153,8 @@ Currently, NFO files are generated using **metadata extracted from filenames onl
 |------------|---------------|---------|
 | Movies     | ✅ Supported   | movie.nfo created |
 | TV Shows   | ✅ Supported   | tvshow.nfo, season.nfo created |
-| Music      | ⏳ Planned     | Future release |
-| Books      | ⏳ Planned     | Future release |
+| Music      | ✅ Supported   | album.nfo created |
+| Books      | ✅ Supported   | book.nfo created |
 
 ## Transaction Support
 
@@ -179,6 +227,36 @@ You can manually edit generated NFO files to add additional metadata:
 </tvshow>
 ```
 
+### Music Album NFO Example
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<album>
+    <title>Abbey Road</title>
+    <artist>The Beatles</artist>
+    <albumartist>The Beatles</albumartist>
+    <year>1969</year>
+    <!-- You can add these manually: -->
+    <genre>Rock</genre>
+    <review>One of the most iconic albums of all time...</review>
+    <musicbrainzalbumid>1234-5678-abcd</musicbrainzalbumid>
+</album>
+```
+
+### Book NFO Example
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<book>
+    <title>The Great Gatsby</title>
+    <author>F. Scott Fitzgerald</author>
+    <year>1925</year>
+    <!-- You can add these manually: -->
+    <publisher>Charles Scribner's Sons</publisher>
+    <isbn>978-0-7432-7356-5</isbn>
+    <description>A critique of the American Dream set in the Jazz Age...</description>
+    <series>N/A</series>
+</book>
+```
+
 ## Best Practices
 
 1. **Enable NFO generation from the start** - It's easier to create NFO files during organization than to add them later
@@ -193,10 +271,8 @@ You can manually edit generated NFO files to add additional metadata:
 
 The following features are planned for future releases:
 
-- 🔄 **TMDB API integration** - Automatically populate NFO files with plot, cast, genres from TMDB
+- 🔄 **Enhanced API integration** - Automatically populate music NFO files with metadata from MusicBrainz and book NFO files from OpenLibrary
 - 🔄 **Episode NFO files** - Generate `<filename>.nfo` for individual episodes with episode-specific metadata
-- 🔄 **Music NFO support** - Generate `album.nfo` for music collections
-- 🔄 **Book NFO support** - Generate `book.nfo` for ebook collections
 - 🔄 **NFO update mode** - Refresh existing NFO files with new metadata from APIs
 - 🔄 **Custom NFO templates** - Allow users to customize NFO file structure
 

@@ -72,7 +72,7 @@ func TestGenerateMovieNFO(t *testing.T) {
 				if !strings.Contains(nfo, "<imdbid>tt1375666</imdbid>") {
 					t.Error("NFO should contain IMDB ID")
 				}
-				
+
 				// Validate XML is well-formed
 				var movieNFO MovieNFO
 				if err := xml.Unmarshal([]byte(nfo), &movieNFO); err != nil {
@@ -93,7 +93,7 @@ func TestGenerateMovieNFO(t *testing.T) {
 				if err := xml.Unmarshal([]byte(nfo), &movieNFO); err != nil {
 					t.Errorf("NFO with special characters should be valid XML: %v", err)
 				}
-				
+
 				// Verify the title was properly preserved after round-trip
 				if movieNFO.Title != "Movie & Title: The <Special> Edition" {
 					t.Errorf("Title should be preserved, got %q", movieNFO.Title)
@@ -163,7 +163,7 @@ func TestGenerateTVShowNFO(t *testing.T) {
 				if !strings.Contains(nfo, "<tvdbid>81189</tvdbid>") {
 					t.Error("NFO should contain TVDB ID")
 				}
-				
+
 				// Validate XML
 				var tvNFO TVShowNFO
 				if err := xml.Unmarshal([]byte(nfo), &tvNFO); err != nil {
@@ -238,7 +238,7 @@ func TestGenerateEpisodeNFO(t *testing.T) {
 				if !strings.Contains(nfo, "<aired>2008-01-20</aired>") {
 					t.Error("NFO should contain air date")
 				}
-				
+
 				// Validate XML
 				var episodeNFO EpisodeNFO
 				if err := xml.Unmarshal([]byte(nfo), &episodeNFO); err != nil {
@@ -295,7 +295,7 @@ func TestGenerateSeasonNFO(t *testing.T) {
 				if !strings.Contains(nfo, "<seasonnumber>1</seasonnumber>") {
 					t.Error("NFO should contain season number")
 				}
-				
+
 				// Validate XML
 				var seasonNFO SeasonNFO
 				if err := xml.Unmarshal([]byte(nfo), &seasonNFO); err != nil {
@@ -378,11 +378,314 @@ func TestMarshalNFO(t *testing.T) {
 				if !strings.HasPrefix(result, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`) {
 					t.Error("marshalNFO() should include XML declaration")
 				}
-				
+
 				// Verify it's properly indented
 				if !strings.Contains(result, "    ") {
 					t.Error("marshalNFO() should indent with 4 spaces")
 				}
+			}
+		})
+	}
+}
+
+func TestGenerateMusicAlbumNFO(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *types.Metadata
+		wantErr  bool
+		validate func(t *testing.T, nfo string)
+	}{
+		{
+			name: "basic album with minimal metadata",
+			metadata: &types.Metadata{
+				Title: "The Dark Side of the Moon",
+				Year:  1973,
+				MusicMetadata: &types.MusicMetadata{
+					Artist:      "Pink Floyd",
+					Album:       "The Dark Side of the Moon",
+					AlbumArtist: "Pink Floyd",
+				},
+			},
+			wantErr: false,
+			validate: func(t *testing.T, nfo string) {
+				if !strings.Contains(nfo, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`) {
+					t.Error("NFO should contain XML declaration")
+				}
+				if !strings.Contains(nfo, "<album>") {
+					t.Error("NFO should contain album root element")
+				}
+				if !strings.Contains(nfo, "<title>The Dark Side of the Moon</title>") {
+					t.Error("NFO should contain album title")
+				}
+				if !strings.Contains(nfo, "<artist>Pink Floyd</artist>") {
+					t.Error("NFO should contain artist")
+				}
+				if !strings.Contains(nfo, "<year>1973</year>") {
+					t.Error("NFO should contain year")
+				}
+
+				// Validate XML is well-formed
+				var albumNFO MusicAlbumNFO
+				if err := xml.Unmarshal([]byte(nfo), &albumNFO); err != nil {
+					t.Errorf("NFO should be valid XML: %v", err)
+				}
+			},
+		},
+		{
+			name: "album with full metadata",
+			metadata: &types.Metadata{
+				Title: "Abbey Road",
+				Year:  1969,
+				MusicMetadata: &types.MusicMetadata{
+					Artist:         "The Beatles",
+					Album:          "Abbey Road",
+					AlbumArtist:    "The Beatles",
+					Genre:          "Rock",
+					MusicBrainzID:  "1234-5678",
+					MusicBrainzRID: "abcd-efgh",
+				},
+			},
+			wantErr: false,
+			validate: func(t *testing.T, nfo string) {
+				if !strings.Contains(nfo, "<title>Abbey Road</title>") {
+					t.Error("NFO should contain title")
+				}
+				if !strings.Contains(nfo, "<artist>The Beatles</artist>") {
+					t.Error("NFO should contain artist")
+				}
+				if !strings.Contains(nfo, "<albumartist>The Beatles</albumartist>") {
+					t.Error("NFO should contain album artist")
+				}
+				if !strings.Contains(nfo, "<genre>Rock</genre>") {
+					t.Error("NFO should contain genre")
+				}
+				if !strings.Contains(nfo, "<musicbrainzalbumid>1234-5678</musicbrainzalbumid>") {
+					t.Error("NFO should contain MusicBrainz album ID")
+				}
+				if !strings.Contains(nfo, "<musicbrainzreleasegroupid>abcd-efgh</musicbrainzreleasegroupid>") {
+					t.Error("NFO should contain MusicBrainz release ID")
+				}
+			},
+		},
+		{
+			name: "album without music metadata",
+			metadata: &types.Metadata{
+				Title: "Unknown Album",
+				Year:  2020,
+			},
+			wantErr: false,
+			validate: func(t *testing.T, nfo string) {
+				// Should still generate valid NFO with just title and year
+				if !strings.Contains(nfo, "<title>Unknown Album</title>") {
+					t.Error("NFO should contain title")
+				}
+				if !strings.Contains(nfo, "<year>2020</year>") {
+					t.Error("NFO should contain year")
+				}
+
+				var albumNFO MusicAlbumNFO
+				if err := xml.Unmarshal([]byte(nfo), &albumNFO); err != nil {
+					t.Errorf("NFO should be valid XML: %v", err)
+				}
+			},
+		},
+		{
+			name: "album with artist but no album artist",
+			metadata: &types.Metadata{
+				Title: "Greatest Hits",
+				Year:  2000,
+				MusicMetadata: &types.MusicMetadata{
+					Artist: "Various Artists",
+					Album:  "Greatest Hits",
+					// AlbumArtist is empty, should fall back to Artist
+				},
+			},
+			wantErr: false,
+			validate: func(t *testing.T, nfo string) {
+				if !strings.Contains(nfo, "<artist>Various Artists</artist>") {
+					t.Error("NFO should contain artist")
+				}
+				if !strings.Contains(nfo, "<albumartist>Various Artists</albumartist>") {
+					t.Error("NFO should fall back to artist for album artist")
+				}
+			},
+		},
+		{
+			name:     "nil metadata",
+			metadata: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gen := NewNFOGenerator()
+			result, err := gen.GenerateMusicAlbumNFO(tt.metadata)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GenerateMusicAlbumNFO() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && tt.validate != nil {
+				tt.validate(t, result)
+			}
+		})
+	}
+}
+
+func TestGenerateBookNFO(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *types.Metadata
+		wantErr  bool
+		validate func(t *testing.T, nfo string)
+	}{
+		{
+			name: "basic book with minimal metadata",
+			metadata: &types.Metadata{
+				Title: "The Great Gatsby",
+				Year:  1925,
+				BookMetadata: &types.BookMetadata{
+					Author: "F. Scott Fitzgerald",
+				},
+			},
+			wantErr: false,
+			validate: func(t *testing.T, nfo string) {
+				if !strings.Contains(nfo, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`) {
+					t.Error("NFO should contain XML declaration")
+				}
+				if !strings.Contains(nfo, "<book>") {
+					t.Error("NFO should contain book root element")
+				}
+				if !strings.Contains(nfo, "<title>The Great Gatsby</title>") {
+					t.Error("NFO should contain book title")
+				}
+				if !strings.Contains(nfo, "<author>F. Scott Fitzgerald</author>") {
+					t.Error("NFO should contain author")
+				}
+				if !strings.Contains(nfo, "<year>1925</year>") {
+					t.Error("NFO should contain year")
+				}
+
+				// Validate XML is well-formed
+				var bookNFO BookNFO
+				if err := xml.Unmarshal([]byte(nfo), &bookNFO); err != nil {
+					t.Errorf("NFO should be valid XML: %v", err)
+				}
+			},
+		},
+		{
+			name: "book with full metadata",
+			metadata: &types.Metadata{
+				Title: "Harry Potter and the Philosopher's Stone",
+				Year:  1997,
+				BookMetadata: &types.BookMetadata{
+					Author:      "J.K. Rowling",
+					Publisher:   "Bloomsbury Publishing",
+					ISBN:        "978-0-7475-3269-9",
+					Series:      "Harry Potter",
+					SeriesIndex: 1,
+					Description: "A young wizard discovers his magical heritage on his 11th birthday.",
+				},
+			},
+			wantErr: false,
+			validate: func(t *testing.T, nfo string) {
+				// Validate it's proper XML first
+				var bookNFO BookNFO
+				if err := xml.Unmarshal([]byte(nfo), &bookNFO); err != nil {
+					t.Errorf("NFO should be valid XML: %v", err)
+				}
+
+				// Check content via unmarshaled struct to avoid XML escaping issues
+				if bookNFO.Title != "Harry Potter and the Philosopher's Stone" {
+					t.Errorf("NFO should contain correct title, got %q", bookNFO.Title)
+				}
+				if bookNFO.Author != "J.K. Rowling" {
+					t.Error("NFO should contain author")
+				}
+				if bookNFO.Publisher != "Bloomsbury Publishing" {
+					t.Error("NFO should contain publisher")
+				}
+				if bookNFO.ISBN != "978-0-7475-3269-9" {
+					t.Error("NFO should contain ISBN")
+				}
+				if bookNFO.Series != "Harry Potter" {
+					t.Error("NFO should contain series")
+				}
+				if bookNFO.SeriesIndex != 1 {
+					t.Error("NFO should contain series index")
+				}
+				if bookNFO.Description != "A young wizard discovers his magical heritage on his 11th birthday." {
+					t.Error("NFO should contain description")
+				}
+			},
+		},
+		{
+			name: "book without book metadata",
+			metadata: &types.Metadata{
+				Title: "Unknown Book",
+				Year:  2020,
+			},
+			wantErr: false,
+			validate: func(t *testing.T, nfo string) {
+				// Should still generate valid NFO with just title and year
+				if !strings.Contains(nfo, "<title>Unknown Book</title>") {
+					t.Error("NFO should contain title")
+				}
+				if !strings.Contains(nfo, "<year>2020</year>") {
+					t.Error("NFO should contain year")
+				}
+
+				var bookNFO BookNFO
+				if err := xml.Unmarshal([]byte(nfo), &bookNFO); err != nil {
+					t.Errorf("NFO should be valid XML: %v", err)
+				}
+			},
+		},
+		{
+			name: "book with special characters in metadata",
+			metadata: &types.Metadata{
+				Title: "Science & Technology: The <Modern> Age",
+				Year:  2021,
+				BookMetadata: &types.BookMetadata{
+					Author:      "Dr. Smith & Dr. Jones",
+					Description: "A comprehensive look at technology's impact on society.",
+				},
+			},
+			wantErr: false,
+			validate: func(t *testing.T, nfo string) {
+				// Ensure it's valid XML - xml.Marshal handles escaping automatically
+				var bookNFO BookNFO
+				if err := xml.Unmarshal([]byte(nfo), &bookNFO); err != nil {
+					t.Errorf("NFO with special characters should be valid XML: %v", err)
+				}
+
+				// Verify the title was properly preserved after round-trip
+				if bookNFO.Title != "Science & Technology: The <Modern> Age" {
+					t.Errorf("Title should be preserved, got %q", bookNFO.Title)
+				}
+			},
+		},
+		{
+			name:     "nil metadata",
+			metadata: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gen := NewNFOGenerator()
+			result, err := gen.GenerateBookNFO(tt.metadata)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GenerateBookNFO() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && tt.validate != nil {
+				tt.validate(t, result)
 			}
 		})
 	}

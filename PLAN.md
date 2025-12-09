@@ -4,7 +4,7 @@ This file tracks the immediate next tasks for the go-jf-org project. Once a task
 
 ## Phase 1: Artwork Downloads for Media Files
 
-**Status:** Not Started  
+**Status:** In Progress - Core downloaders complete  
 **Priority:** Medium  
 **Estimated Effort:** 2-3 days
 
@@ -13,40 +13,40 @@ Implement artwork downloading functionality to automatically fetch and save post
 
 ### Tasks
 
-- [ ] **Research and Design** (0.5 days)
-  - [ ] Review TMDB API documentation for image downloads
-  - [ ] Review Cover Art Archive (MusicBrainz) API for album artwork
-  - [ ] Review OpenLibrary API for book covers
-  - [ ] Design artwork downloader architecture and interfaces
-  - [ ] Plan file storage structure for artwork
+- [x] **Research and Design** (0.5 days)
+  - [x] Review TMDB API documentation for image downloads
+  - [x] Review Cover Art Archive (MusicBrainz) API for album artwork
+  - [x] Review OpenLibrary API for book covers
+  - [x] Design artwork downloader architecture and interfaces
+  - [x] Plan file storage structure for artwork
 
-- [ ] **Create Core Artwork Package** (0.5 days)
-  - [ ] Create `internal/artwork/` package structure
-  - [ ] Define `Downloader` interface
-  - [ ] Implement base downloader with common HTTP logic
-  - [ ] Add error handling and retry mechanism
-  - [ ] Implement artwork caching to avoid re-downloads
+- [x] **Create Core Artwork Package** (0.5 days)
+  - [x] Create `internal/artwork/` package structure
+  - [x] Define `Downloader` interface
+  - [x] Implement base downloader with common HTTP logic
+  - [x] Add error handling and retry mechanism
+  - [x] Implement artwork caching to avoid re-downloads
 
-- [ ] **TMDB Artwork Downloader** (0.5 days)
-  - [ ] Implement movie poster downloader
-  - [ ] Implement TV show poster downloader
-  - [ ] Add backdrop/fanart support
-  - [ ] Handle multiple image sizes (w500, w780, original)
-  - [ ] Add unit tests with >80% coverage
+- [x] **TMDB Artwork Downloader** (0.5 days)
+  - [x] Implement movie poster downloader
+  - [x] Implement TV show poster downloader
+  - [x] Add backdrop/fanart support
+  - [x] Handle multiple image sizes (w500, w780, original)
+  - [x] Add unit tests with >80% coverage
 
-- [ ] **Cover Art Archive Integration** (0.5 days)
-  - [ ] Implement album cover downloader
-  - [ ] Handle MusicBrainz release IDs
-  - [ ] Add proper rate limiting (1 req/s for MusicBrainz)
+- [x] **Cover Art Archive Integration** (0.5 days)
+  - [x] Implement album cover downloader
+  - [x] Handle MusicBrainz release IDs
+  - [x] Add proper rate limiting (1 req/s for MusicBrainz)
   - [ ] Add fallback for missing artwork
   - [ ] Add unit tests
 
-- [ ] **OpenLibrary Book Cover Downloader** (0.5 days)
-  - [ ] Implement book cover downloader
-  - [ ] Handle ISBN and OpenLibrary IDs
-  - [ ] Support different cover sizes (S, M, L)
-  - [ ] Add error handling for missing covers
-  - [ ] Add unit tests
+- [x] **OpenLibrary Book Cover Downloader** (0.5 days)
+  - [x] Implement book cover downloader
+  - [x] Handle ISBN and OpenLibrary IDs
+  - [x] Support different cover sizes (S, M, L)
+  - [x] Add error handling for missing covers
+  - [x] Add unit tests
 
 - [ ] **CLI Integration** (0.5 days)
   - [ ] Add `--download-artwork` flag to organize command

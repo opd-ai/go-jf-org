@@ -23,6 +23,8 @@ var (
 	organizeCreateNFO       bool
 	organizeJSONOutput      bool
 	organizeInteractive     bool
+	organizeDownloadArtwork bool
+	organizeArtworkSize     string
 )
 
 var organizeCmd = &cobra.Command{
@@ -56,6 +58,8 @@ func init() {
 	organizeCmd.Flags().BoolVar(&organizeDryRun, "dry-run", false, "preview changes without executing")
 	organizeCmd.Flags().BoolVar(&organizeNoTransaction, "no-transaction", false, "disable transaction logging (not recommended)")
 	organizeCmd.Flags().BoolVar(&organizeCreateNFO, "create-nfo", false, "create Jellyfin-compatible NFO metadata files")
+	organizeCmd.Flags().BoolVar(&organizeDownloadArtwork, "download-artwork", false, "download poster and cover artwork for media")
+	organizeCmd.Flags().StringVar(&organizeArtworkSize, "artwork-size", "medium", "artwork size preference (small, medium, large, original)")
 	organizeCmd.Flags().BoolVar(&organizeJSONOutput, "json", false, "output statistics in JSON format")
 	organizeCmd.Flags().BoolVar(&organizeInteractive, "interactive", false, "prompt for decisions on conflicts (sets conflict strategy to interactive)")
 }

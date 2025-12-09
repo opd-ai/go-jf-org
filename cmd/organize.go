@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
+	"github.com/opd-ai/go-jf-org/internal/artwork"
 	"github.com/opd-ai/go-jf-org/internal/organizer"
 	"github.com/opd-ai/go-jf-org/internal/safety"
 	"github.com/opd-ai/go-jf-org/internal/util"
@@ -185,6 +186,25 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	
 	if organizeCreateNFO {
 		log.Info().Msg("NFO file generation enabled")
+	}
+	
+	// Configure artwork downloads
+	if organizeDownloadArtwork {
+		var artworkSize artwork.ImageSize
+		switch organizeArtworkSize {
+		case "small":
+			artworkSize = artwork.SizeSmall
+		case "medium":
+			artworkSize = artwork.SizeMedium
+		case "large":
+			artworkSize = artwork.SizeLarge
+		case "original":
+			artworkSize = artwork.SizeOriginal
+		default:
+			artworkSize = artwork.SizeMedium
+		}
+		org.SetDownloadArtwork(true, artworkSize)
+		log.Info().Str("size", organizeArtworkSize).Msg("Artwork download enabled")
 	}
 
 	// Plan organization

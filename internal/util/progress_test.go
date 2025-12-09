@@ -183,7 +183,7 @@ func TestProgressTracker_PercentageCalculation(t *testing.T) {
 
 			output := buf.String()
 			expectedStr := strings.Replace(tt.name, "_", " ", -1)
-			
+
 			// Check percentage is in output
 			if tt.total > 0 && !strings.Contains(output, strings.TrimSpace(strings.Split(expectedStr, " ")[0])) {
 				// Just verify some output was generated for non-zero totals

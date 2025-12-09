@@ -4,9 +4,9 @@ import "time"
 
 // SearchResponse represents the OpenLibrary search API response
 type SearchResponse struct {
-	NumFound int        `json:"numFound"`
-	Start    int        `json:"start"`
-	Docs     []BookDoc  `json:"docs"`
+	NumFound int       `json:"numFound"`
+	Start    int       `json:"start"`
+	Docs     []BookDoc `json:"docs"`
 }
 
 // BookDoc represents a book document from search results
@@ -25,19 +25,19 @@ type BookDoc struct {
 
 // BookDetails represents detailed book information
 type BookDetails struct {
-	Key              string        `json:"key"`
-	Title            string        `json:"title"`
-	Subtitle         string        `json:"subtitle"`
-	Description      interface{}   `json:"description"` // Can be string or object
-	Authors          []AuthorRef   `json:"authors"`
-	Publishers       []string      `json:"publishers"`
-	PublishDate      string        `json:"publish_date"`
-	ISBN10           []string      `json:"isbn_10"`
-	ISBN13           []string      `json:"isbn_13"`
-	NumberOfPages    int           `json:"number_of_pages"`
-	Subjects         []string      `json:"subjects"`
-	Covers           []int         `json:"covers"`
-	Works            []WorkRef     `json:"works"`
+	Key           string      `json:"key"`
+	Title         string      `json:"title"`
+	Subtitle      string      `json:"subtitle"`
+	Description   interface{} `json:"description"` // Can be string or object
+	Authors       []AuthorRef `json:"authors"`
+	Publishers    []string    `json:"publishers"`
+	PublishDate   string      `json:"publish_date"`
+	ISBN10        []string    `json:"isbn_10"`
+	ISBN13        []string    `json:"isbn_13"`
+	NumberOfPages int         `json:"number_of_pages"`
+	Subjects      []string    `json:"subjects"`
+	Covers        []int       `json:"covers"`
+	Works         []WorkRef   `json:"works"`
 }
 
 // AuthorRef represents an author reference
@@ -52,40 +52,40 @@ type WorkRef struct {
 
 // AuthorDetails represents detailed author information
 type AuthorDetails struct {
-	Key           string `json:"key"`
-	Name          string `json:"name"`
-	BirthDate     string `json:"birth_date"`
-	Bio           interface{} `json:"bio"` // Can be string or object
-	PersonalName  string `json:"personal_name"`
-	AlternateNames []string `json:"alternate_names"`
-	Photos        []int  `json:"photos"`
+	Key            string      `json:"key"`
+	Name           string      `json:"name"`
+	BirthDate      string      `json:"birth_date"`
+	Bio            interface{} `json:"bio"` // Can be string or object
+	PersonalName   string      `json:"personal_name"`
+	AlternateNames []string    `json:"alternate_names"`
+	Photos         []int       `json:"photos"`
 }
 
 // WorkDetails represents detailed work information
 type WorkDetails struct {
-	Key          string      `json:"key"`
-	Title        string      `json:"title"`
-	Description  interface{} `json:"description"` // Can be string or object
-	Authors      []AuthorRef `json:"authors"`
-	Subjects     []string    `json:"subjects"`
-	Covers       []int       `json:"covers"`
-	FirstPublishDate string  `json:"first_publish_date"`
+	Key              string      `json:"key"`
+	Title            string      `json:"title"`
+	Description      interface{} `json:"description"` // Can be string or object
+	Authors          []AuthorRef `json:"authors"`
+	Subjects         []string    `json:"subjects"`
+	Covers           []int       `json:"covers"`
+	FirstPublishDate string      `json:"first_publish_date"`
 }
 
 // ISBNResponse represents the OpenLibrary ISBN API response
 type ISBNResponse struct {
-	Key              string      `json:"key"`
-	Title            string      `json:"title"`
-	Subtitle         string      `json:"subtitle"`
-	Authors          []AuthorRef `json:"authors"`
-	Publishers       []string    `json:"publishers"`
-	PublishDate      string      `json:"publish_date"`
-	ISBN10           []string    `json:"isbn_10"`
-	ISBN13           []string    `json:"isbn_13"`
-	NumberOfPages    int         `json:"number_of_pages"`
-	Subjects         []string    `json:"subjects"`
-	Covers           []int       `json:"covers"`
-	Works            []WorkRef   `json:"works"`
+	Key           string      `json:"key"`
+	Title         string      `json:"title"`
+	Subtitle      string      `json:"subtitle"`
+	Authors       []AuthorRef `json:"authors"`
+	Publishers    []string    `json:"publishers"`
+	PublishDate   string      `json:"publish_date"`
+	ISBN10        []string    `json:"isbn_10"`
+	ISBN13        []string    `json:"isbn_13"`
+	NumberOfPages int         `json:"number_of_pages"`
+	Subjects      []string    `json:"subjects"`
+	Covers        []int       `json:"covers"`
+	Works         []WorkRef   `json:"works"`
 }
 
 // CachedResponse represents a cached API response

@@ -275,7 +275,7 @@ func (e *Enricher) extractYear(dateStr string) int {
 	for _, part := range parts {
 		// Remove common separators
 		part = strings.Trim(part, ",-./")
-		
+
 		// Try to parse as integer
 		year, err := strconv.Atoi(part)
 		if err == nil && year >= MinBookYear && year <= MaxBookYear {

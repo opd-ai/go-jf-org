@@ -75,7 +75,7 @@ func TestOpenLibraryDownloader_DownloadBookCoverByISBN(t *testing.T) {
 			tempDir := t.TempDir()
 
 			err := downloader.DownloadBookCoverByISBN(context.Background(), tt.isbn, tempDir)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("Expected error but got nil")
 			}
@@ -111,7 +111,7 @@ func TestOpenLibraryDownloader_DownloadBookCoverByOLID(t *testing.T) {
 			tempDir := t.TempDir()
 
 			err := downloader.DownloadBookCoverByOLID(context.Background(), tt.olid, tempDir)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("Expected error but got nil")
 			}
@@ -173,7 +173,7 @@ func TestOpenLibraryDownloader_downloadWithFallback(t *testing.T) {
 			destPath := tempDir + "/cover.jpg"
 
 			err := downloader.downloadWithFallback(context.Background(), server.URL, destPath)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("Expected error but got nil")
 			}
@@ -221,7 +221,7 @@ func TestOpenLibraryDownloader_getSizeString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := DefaultConfig()
 			downloader := NewOpenLibraryDownloader(config, tt.size)
-			
+
 			result := downloader.getSizeString()
 			if result != tt.expected {
 				t.Errorf("Expected size string %s, got %s", tt.expected, result)

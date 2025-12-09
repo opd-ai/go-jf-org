@@ -107,7 +107,7 @@ func TestCoverArtDownloader_DownloadAlbumCover(t *testing.T) {
 				config := DefaultConfig()
 				downloader := NewCoverArtDownloader(config, SizeMedium)
 				tempDir := t.TempDir()
-				
+
 				err := downloader.DownloadAlbumCover(context.Background(), tt.releaseID, tempDir)
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
@@ -120,12 +120,12 @@ func TestCoverArtDownloader_DownloadAlbumCover(t *testing.T) {
 
 			config := DefaultConfig()
 			downloader := NewCoverArtDownloader(config, SizeMedium)
-			
+
 			// For testing, we need to skip the actual download part
 			// Just test that the method doesn't panic
 			tempDir := t.TempDir()
 			ctx := context.Background()
-			
+
 			// This will fail to download the actual image but we're testing the logic
 			_ = downloader.DownloadAlbumCover(ctx, tt.releaseID, tempDir)
 		})
@@ -210,7 +210,7 @@ func TestCoverArtDownloader_selectImageURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := DefaultConfig()
 			downloader := NewCoverArtDownloader(config, tt.size)
-			
+
 			result := downloader.selectImageURL(tt.image)
 			if result != tt.expectURL {
 				t.Errorf("Expected URL %s, got %s", tt.expectURL, result)

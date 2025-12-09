@@ -55,7 +55,7 @@ type MovieMetadata struct {
 	Rating        float64
 	TMDBID        int
 	IMDBID        string
-	Runtime       int    // Runtime in minutes
+	Runtime       int // Runtime in minutes
 	Tagline       string
 	PosterURL     string // URL to poster image
 	BackdropURL   string // URL to backdrop image

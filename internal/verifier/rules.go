@@ -40,10 +40,10 @@ type MovieRules struct{}
 // VerifyMovie checks if a movie directory follows Jellyfin conventions
 func (r *MovieRules) VerifyMovie(dirPath string) []Violation {
 	violations := []Violation{}
-	
+
 	// Extract directory name
 	dirName := filepath.Base(dirPath)
-	
+
 	// Check directory naming: "Movie Name (Year)"
 	if !yearPattern.MatchString(dirName) {
 		violations = append(violations, Violation{
@@ -55,10 +55,10 @@ func (r *MovieRules) VerifyMovie(dirPath string) []Violation {
 		})
 		return violations
 	}
-	
+
 	// Extract expected movie name from directory
 	expectedName := dirName // Full "Movie Name (Year)"
-	
+
 	// Check for video files
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
@@ -71,15 +71,15 @@ func (r *MovieRules) VerifyMovie(dirPath string) []Violation {
 		})
 		return violations
 	}
-	
+
 	videoExtensions := map[string]bool{
 		".mkv": true, ".mp4": true, ".avi": true,
 		".m4v": true, ".ts": true, ".webm": true,
 	}
-	
+
 	var videoFiles []string
 	var hasNFO bool
-	
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			// Subdirectories are not expected in movie folders
@@ -92,13 +92,13 @@ func (r *MovieRules) VerifyMovie(dirPath string) []Violation {
 			})
 			continue
 		}
-		
+
 		fileName := entry.Name()
 		ext := strings.ToLower(filepath.Ext(fileName))
-		
+
 		if videoExtensions[ext] {
 			videoFiles = append(videoFiles, fileName)
-			
+
 			// Check if video file follows naming convention
 			nameWithoutExt := strings.TrimSuffix(fileName, ext)
 			// Allow optional quality/version suffixes: "Movie Name (Year) - 1080p.mkv"
@@ -115,7 +115,7 @@ func (r *MovieRules) VerifyMovie(dirPath string) []Violation {
 			hasNFO = true
 		}
 	}
-	
+
 	// Check for at least one video file
 	if len(videoFiles) == 0 {
 		violations = append(violations, Violation{
@@ -126,7 +126,7 @@ func (r *MovieRules) VerifyMovie(dirPath string) []Violation {
 			Suggestion: "Add a video file or remove empty directory",
 		})
 	}
-	
+
 	// NFO is optional but recommended
 	if !hasNFO && len(videoFiles) > 0 {
 		violations = append(violations, Violation{
@@ -137,7 +137,7 @@ func (r *MovieRules) VerifyMovie(dirPath string) []Violation {
 			Suggestion: "Generate NFO file with: go-jf-org organize --create-nfo",
 		})
 	}
-	
+
 	return violations
 }
 
@@ -147,9 +147,9 @@ type TVRules struct{}
 // VerifyTVShow checks if a TV show directory follows Jellyfin conventions
 func (r *TVRules) VerifyTVShow(showPath string) []Violation {
 	violations := []Violation{}
-	
+
 	showName := filepath.Base(showPath)
-	
+
 	// Read show directory
 	entries, err := os.ReadDir(showPath)
 	if err != nil {
@@ -162,10 +162,10 @@ func (r *TVRules) VerifyTVShow(showPath string) []Violation {
 		})
 		return violations
 	}
-	
+
 	var seasonDirs []string
 	var hasShowNFO bool
-	
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			dirName := entry.Name()
@@ -187,7 +187,7 @@ func (r *TVRules) VerifyTVShow(showPath string) []Violation {
 			hasShowNFO = true
 		}
 	}
-	
+
 	// Check for at least one season
 	if len(seasonDirs) == 0 {
 		violations = append(violations, Violation{
@@ -198,7 +198,7 @@ func (r *TVRules) VerifyTVShow(showPath string) []Violation {
 			Suggestion: "Create directories named 'Season 01', 'Season 02', etc.",
 		})
 	}
-	
+
 	// NFO is optional but recommended
 	if !hasShowNFO {
 		violations = append(violations, Violation{
@@ -209,16 +209,16 @@ func (r *TVRules) VerifyTVShow(showPath string) []Violation {
 			Suggestion: "Generate NFO file with: go-jf-org organize --create-nfo",
 		})
 	}
-	
+
 	return violations
 }
 
 // verifySeason checks a single season directory
 func (r *TVRules) verifySeason(seasonPath, showName string) []Violation {
 	violations := []Violation{}
-	
+
 	seasonDir := filepath.Base(seasonPath)
-	
+
 	entries, err := os.ReadDir(seasonPath)
 	if err != nil {
 		violations = append(violations, Violation{
@@ -230,15 +230,15 @@ func (r *TVRules) verifySeason(seasonPath, showName string) []Violation {
 		})
 		return violations
 	}
-	
+
 	videoExtensions := map[string]bool{
 		".mkv": true, ".mp4": true, ".avi": true,
 		".m4v": true, ".ts": true, ".webm": true,
 	}
-	
+
 	var videoFiles []string
 	var hasSeasonNFO bool
-	
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			violations = append(violations, Violation{
@@ -250,13 +250,13 @@ func (r *TVRules) verifySeason(seasonPath, showName string) []Violation {
 			})
 			continue
 		}
-		
+
 		fileName := entry.Name()
 		ext := strings.ToLower(filepath.Ext(fileName))
-		
+
 		if videoExtensions[ext] {
 			videoFiles = append(videoFiles, fileName)
-			
+
 			// Verify episode naming
 			if !episodePattern.MatchString(fileName) {
 				violations = append(violations, Violation{
@@ -271,7 +271,7 @@ func (r *TVRules) verifySeason(seasonPath, showName string) []Violation {
 			hasSeasonNFO = true
 		}
 	}
-	
+
 	if len(videoFiles) == 0 {
 		violations = append(violations, Violation{
 			Severity:   SeverityWarning,
@@ -281,7 +281,7 @@ func (r *TVRules) verifySeason(seasonPath, showName string) []Violation {
 			Suggestion: "Add episode files or remove empty season directory",
 		})
 	}
-	
+
 	// Season NFO is optional
 	if !hasSeasonNFO && len(videoFiles) > 0 {
 		violations = append(violations, Violation{
@@ -292,7 +292,7 @@ func (r *TVRules) verifySeason(seasonPath, showName string) []Violation {
 			Suggestion: "Generate NFO file with: go-jf-org organize --create-nfo",
 		})
 	}
-	
+
 	return violations
 }
 
@@ -302,7 +302,7 @@ type MusicRules struct{}
 // VerifyMusic checks if a music directory follows Jellyfin conventions
 func (r *MusicRules) VerifyMusic(artistPath string) []Violation {
 	violations := []Violation{}
-	
+
 	// Read artist directory
 	entries, err := os.ReadDir(artistPath)
 	if err != nil {
@@ -315,10 +315,10 @@ func (r *MusicRules) VerifyMusic(artistPath string) []Violation {
 		})
 		return violations
 	}
-	
+
 	// Expected: "Album Name (Year)" directories
 	var albumDirs []string
-	
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			dirName := entry.Name()
@@ -336,7 +336,7 @@ func (r *MusicRules) VerifyMusic(artistPath string) []Violation {
 			}
 		}
 	}
-	
+
 	if len(albumDirs) == 0 {
 		violations = append(violations, Violation{
 			Severity:   SeverityWarning,
@@ -346,7 +346,7 @@ func (r *MusicRules) VerifyMusic(artistPath string) []Violation {
 			Suggestion: "Create directories named 'Album Name (YYYY)'",
 		})
 	}
-	
+
 	return violations
 }
 
@@ -356,7 +356,7 @@ type BookRules struct{}
 // VerifyBook checks if a book directory follows Jellyfin conventions
 func (r *BookRules) VerifyBook(authorPath string) []Violation {
 	violations := []Violation{}
-	
+
 	// Read author directory
 	entries, err := os.ReadDir(authorPath)
 	if err != nil {
@@ -369,16 +369,16 @@ func (r *BookRules) VerifyBook(authorPath string) []Violation {
 		})
 		return violations
 	}
-	
+
 	bookExtensions := map[string]bool{
 		".epub": true, ".mobi": true, ".pdf": true,
 		".azw3": true, ".cbz": true, ".cbr": true,
 	}
-	
+
 	// Expected: "Book Title (Year)" directories or direct book files
 	var bookDirs []string
 	var bookFiles []string
-	
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			dirName := entry.Name()
@@ -400,7 +400,7 @@ func (r *BookRules) VerifyBook(authorPath string) []Violation {
 			}
 		}
 	}
-	
+
 	if len(bookDirs) == 0 && len(bookFiles) == 0 {
 		violations = append(violations, Violation{
 			Severity:   SeverityWarning,
@@ -410,6 +410,6 @@ func (r *BookRules) VerifyBook(authorPath string) []Violation {
 			Suggestion: "Add book files in directories named 'Book Title (YYYY)'",
 		})
 	}
-	
+
 	return violations
 }

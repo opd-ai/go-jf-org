@@ -19,8 +19,8 @@ const (
 	DefaultTimeout = 10 * time.Second
 
 	// Default cache TTL in seconds
-	CacheTTLSuccess = 86400 // 24 hours
-	CacheTTLNotFound = 3600 // 1 hour
+	CacheTTLSuccess  = 86400 // 24 hours
+	CacheTTLNotFound = 3600  // 1 hour
 )
 
 // Client represents a TMDB API client

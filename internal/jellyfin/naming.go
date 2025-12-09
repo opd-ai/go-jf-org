@@ -28,11 +28,11 @@ func (n *Naming) GetMovieName(metadata *types.Metadata, ext string) string {
 	}
 
 	title := SanitizeFilename(metadata.Title)
-	
+
 	if metadata.Year > 0 {
 		return fmt.Sprintf("%s (%d)%s", title, metadata.Year, ext)
 	}
-	
+
 	return fmt.Sprintf("%s%s", title, ext)
 }
 
@@ -44,11 +44,11 @@ func (n *Naming) GetMovieDir(metadata *types.Metadata) string {
 	}
 
 	title := SanitizeFilename(metadata.Title)
-	
+
 	if metadata.Year > 0 {
 		return fmt.Sprintf("%s (%d)", title, metadata.Year)
 	}
-	
+
 	return title
 }
 
@@ -61,20 +61,20 @@ func (n *Naming) GetTVShowName(metadata *types.Metadata, ext string) string {
 
 	tv := metadata.TVMetadata
 	show := SanitizeFilename(tv.ShowTitle)
-	
+
 	if show == "" {
 		return ""
 	}
 
 	// Base format: "Show Name - S##E##"
 	name := fmt.Sprintf("%s - S%02dE%02d", show, tv.Season, tv.Episode)
-	
+
 	// Add episode title if available
 	if tv.EpisodeTitle != "" {
 		episodeTitle := SanitizeFilename(tv.EpisodeTitle)
 		name = fmt.Sprintf("%s - %s", name, episodeTitle)
 	}
-	
+
 	return name + ext
 }
 
@@ -133,7 +133,7 @@ func (n *Naming) GetMusicTrackName(metadata *types.Metadata, ext string) string 
 
 	music := metadata.MusicMetadata
 	title := SanitizeFilename(metadata.Title)
-	
+
 	if title == "" {
 		title = "Unknown Track"
 	}

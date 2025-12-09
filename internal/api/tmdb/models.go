@@ -4,10 +4,10 @@ import "time"
 
 // SearchMovieResponse represents the TMDB movie search API response
 type SearchMovieResponse struct {
-	Page         int            `json:"page"`
-	Results      []MovieResult  `json:"results"`
-	TotalPages   int            `json:"total_pages"`
-	TotalResults int            `json:"total_results"`
+	Page         int           `json:"page"`
+	Results      []MovieResult `json:"results"`
+	TotalPages   int           `json:"total_pages"`
+	TotalResults int           `json:"total_results"`
 }
 
 // MovieResult represents a single movie result from search
@@ -28,24 +28,24 @@ type MovieResult struct {
 
 // MovieDetails represents detailed movie information
 type MovieDetails struct {
-	ID               int      `json:"id"`
-	Title            string   `json:"title"`
-	OriginalTitle    string   `json:"original_title"`
-	Overview         string   `json:"overview"`
-	ReleaseDate      string   `json:"release_date"`
-	Runtime          int      `json:"runtime"`
-	Budget           int64    `json:"budget"`
-	Revenue          int64    `json:"revenue"`
-	PosterPath       string   `json:"poster_path"`
-	BackdropPath     string   `json:"backdrop_path"`
-	VoteAverage      float64  `json:"vote_average"`
-	VoteCount        int      `json:"vote_count"`
-	Popularity       float64  `json:"popularity"`
-	Status           string   `json:"status"`
-	Tagline          string   `json:"tagline"`
-	Genres           []Genre  `json:"genres"`
-	IMDBID           string   `json:"imdb_id"`
-	OriginalLanguage string   `json:"original_language"`
+	ID               int     `json:"id"`
+	Title            string  `json:"title"`
+	OriginalTitle    string  `json:"original_title"`
+	Overview         string  `json:"overview"`
+	ReleaseDate      string  `json:"release_date"`
+	Runtime          int     `json:"runtime"`
+	Budget           int64   `json:"budget"`
+	Revenue          int64   `json:"revenue"`
+	PosterPath       string  `json:"poster_path"`
+	BackdropPath     string  `json:"backdrop_path"`
+	VoteAverage      float64 `json:"vote_average"`
+	VoteCount        int     `json:"vote_count"`
+	Popularity       float64 `json:"popularity"`
+	Status           string  `json:"status"`
+	Tagline          string  `json:"tagline"`
+	Genres           []Genre `json:"genres"`
+	IMDBID           string  `json:"imdb_id"`
+	OriginalLanguage string  `json:"original_language"`
 }
 
 // SearchTVResponse represents the TMDB TV search API response
@@ -74,24 +74,24 @@ type TVResult struct {
 
 // TVDetails represents detailed TV show information
 type TVDetails struct {
-	ID               int       `json:"id"`
-	Name             string    `json:"name"`
-	OriginalName     string    `json:"original_name"`
-	Overview         string    `json:"overview"`
-	FirstAirDate     string    `json:"first_air_date"`
-	LastAirDate      string    `json:"last_air_date"`
-	PosterPath       string    `json:"poster_path"`
-	BackdropPath     string    `json:"backdrop_path"`
-	VoteAverage      float64   `json:"vote_average"`
-	VoteCount        int       `json:"vote_count"`
-	Popularity       float64   `json:"popularity"`
-	Status           string    `json:"status"`
-	Tagline          string    `json:"tagline"`
-	Genres           []Genre   `json:"genres"`
-	NumberOfSeasons  int       `json:"number_of_seasons"`
-	NumberOfEpisodes int       `json:"number_of_episodes"`
-	Seasons          []Season  `json:"seasons"`
-	OriginalLanguage string    `json:"original_language"`
+	ID               int      `json:"id"`
+	Name             string   `json:"name"`
+	OriginalName     string   `json:"original_name"`
+	Overview         string   `json:"overview"`
+	FirstAirDate     string   `json:"first_air_date"`
+	LastAirDate      string   `json:"last_air_date"`
+	PosterPath       string   `json:"poster_path"`
+	BackdropPath     string   `json:"backdrop_path"`
+	VoteAverage      float64  `json:"vote_average"`
+	VoteCount        int      `json:"vote_count"`
+	Popularity       float64  `json:"popularity"`
+	Status           string   `json:"status"`
+	Tagline          string   `json:"tagline"`
+	Genres           []Genre  `json:"genres"`
+	NumberOfSeasons  int      `json:"number_of_seasons"`
+	NumberOfEpisodes int      `json:"number_of_episodes"`
+	Seasons          []Season `json:"seasons"`
+	OriginalLanguage string   `json:"original_language"`
 }
 
 // Genre represents a movie or TV genre

@@ -13,13 +13,13 @@ import (
 
 // Result represents the outcome of a verification operation
 type Result struct {
-	Path           string
-	TotalDirs      int
-	CheckedDirs    int
-	Violations     []Violation
-	ErrorCount     int
-	WarningCount   int
-	MediaCounts    map[types.MediaType]int
+	Path         string
+	TotalDirs    int
+	CheckedDirs  int
+	Violations   []Violation
+	ErrorCount   int
+	WarningCount int
+	MediaCounts  map[types.MediaType]int
 }
 
 // Verifier performs structure verification on Jellyfin media directories

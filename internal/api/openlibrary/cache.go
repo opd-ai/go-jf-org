@@ -39,7 +39,7 @@ func NewCache(cacheDir string) (*Cache, error) {
 // Get retrieves a cached response if it exists and is not expired
 func (c *Cache) Get(key string) (interface{}, bool) {
 	filename := c.getCacheFilename(key)
-	
+
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		// Cache miss - file doesn't exist or can't be read

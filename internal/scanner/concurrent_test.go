@@ -135,7 +135,7 @@ func TestWorkerPool_ContextCancellation(t *testing.T) {
 
 	// Scan should handle cancellation gracefully
 	_, _, err := pool.ScanConcurrent(ctx, tempDir, []string{".mkv"})
-	
+
 	// We expect either no error (completed before cancel) or context canceled error
 	if err != nil && err != context.Canceled {
 		t.Errorf("Expected nil or context.Canceled, got %v", err)

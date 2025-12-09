@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	previewDest       string
-	previewMediaType  string
+	previewDest             string
+	previewMediaType        string
 	previewConflictStrategy string
-	previewCreateNFO  bool
+	previewCreateNFO        bool
 )
 
 var previewCmd = &cobra.Command{
@@ -148,7 +148,7 @@ func runPreview(cmd *cobra.Command, args []string) error {
 	if bookCount > 0 {
 		fmt.Printf("Books: %d\n", bookCount)
 	}
-	
+
 	if conflictCount > 0 {
 		fmt.Printf("\n⚠ Conflicts detected: %d files\n", conflictCount)
 	}

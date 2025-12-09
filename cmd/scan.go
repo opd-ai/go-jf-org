@@ -77,7 +77,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	var tmdbEnricher *tmdb.Enricher
 	var mbEnricher *musicbrainz.Enricher
 	var olEnricher *openlibrary.Enricher
-	
+
 	if enrichScan {
 		// Set up TMDB enricher for movies and TV shows
 		if cfg.APIKeys.TMDB == "" {
@@ -117,15 +117,15 @@ func runScan(cmd *cobra.Command, args []string) error {
 	if !jsonOutput {
 		fmt.Printf("Scanning %s...\n", absPath)
 	}
-	
+
 	scanTimer := stats.NewTimer("scan")
 	result, err := s.Scan(absPath)
 	scanTimer.Stop()
-	
+
 	if err != nil {
 		return fmt.Errorf("scan failed: %w", err)
 	}
-	
+
 	stats.Add("files_found", len(result.Files))
 	stats.Add("errors", len(result.Errors))
 
@@ -171,12 +171,12 @@ func runScan(cmd *cobra.Command, args []string) error {
 			progress = util.NewProgressTracker(len(result.Files), "Enriching metadata")
 			defer progress.Finish()
 		}
-		
+
 		fmt.Println("Files found:")
 		for _, file := range result.Files {
 			mediaType := s.GetMediaType(file)
 			metadata, err := s.GetMetadata(file)
-			
+
 			stats.Increment("files_processed")
 
 			if err != nil {
@@ -233,7 +233,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 					}
 				}
 			}
-			
+
 			// Update progress if tracking
 			if progress != nil {
 				progress.Increment()
@@ -365,7 +365,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	// Finalize and display statistics
 	stats.Finish()
-	
+
 	if jsonOutput {
 		// Output JSON statistics
 		jsonStr, err := stats.ToJSON()

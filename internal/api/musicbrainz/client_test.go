@@ -25,8 +25,8 @@ func TestNewClient(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "default timeout",
-			config: Config{},
+			name:    "default timeout",
+			config:  Config{},
 			wantErr: false,
 		},
 		{

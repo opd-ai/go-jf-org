@@ -1,12 +1,14 @@
 package organizer
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/opd-ai/go-jf-org/internal/artwork"
 	"github.com/opd-ai/go-jf-org/internal/detector"
 	"github.com/opd-ai/go-jf-org/internal/jellyfin"
 	"github.com/opd-ai/go-jf-org/internal/metadata"
@@ -16,13 +18,15 @@ import (
 
 // Organizer handles file organization operations
 type Organizer struct {
-	detector          detector.Detector
-	parser            metadata.Parser
-	naming            *jellyfin.Naming
-	nfoGenerator      *jellyfin.NFOGenerator
-	dryRun            bool
-	createNFO         bool
-	transactionMgr    *safety.TransactionManager
+	detector           detector.Detector
+	parser             metadata.Parser
+	naming             *jellyfin.Naming
+	nfoGenerator       *jellyfin.NFOGenerator
+	dryRun             bool
+	createNFO          bool
+	downloadArtwork    bool
+	artworkSize        artwork.ImageSize
+	transactionMgr     *safety.TransactionManager
 	enableTransactions bool
 }
 
@@ -35,6 +39,8 @@ func NewOrganizer(dryRun bool) *Organizer {
 		nfoGenerator:       jellyfin.NewNFOGenerator(),
 		dryRun:             dryRun,
 		createNFO:          false,
+		downloadArtwork:    false,
+		artworkSize:        artwork.SizeMedium,
 		enableTransactions: false,
 	}
 }
@@ -48,6 +54,8 @@ func NewOrganizerWithTransactions(dryRun bool, tm *safety.TransactionManager) *O
 		nfoGenerator:       jellyfin.NewNFOGenerator(),
 		dryRun:             dryRun,
 		createNFO:          false,
+		downloadArtwork:    false,
+		artworkSize:        artwork.SizeMedium,
 		transactionMgr:     tm,
 		enableTransactions: tm != nil,
 	}
@@ -56,6 +64,15 @@ func NewOrganizerWithTransactions(dryRun bool, tm *safety.TransactionManager) *O
 // SetCreateNFO enables or disables NFO file creation
 func (o *Organizer) SetCreateNFO(create bool) {
 	o.createNFO = create
+}
+
+// SetDownloadArtwork enables or disables artwork downloads
+func (o *Organizer) SetDownloadArtwork(download bool, size artwork.ImageSize) {
+	o.downloadArtwork = download
+	// Only update size if provided (allows keeping existing size)
+	if size != "" {
+		o.artworkSize = size
+	}
 }
 
 // Plan represents a planned organization operation
@@ -95,7 +112,7 @@ func (o *Organizer) PlanOrganization(files []string, destRoot string, mediaTypeF
 			log.Warn().Err(err).Str("file", file).Msg("Failed to parse metadata, skipping")
 			continue
 		}
-		
+
 		// Defensive nil check - ensures safety even if parsers change in the future
 		if meta == nil {
 			log.Warn().Str("file", file).Msg("Parser returned nil metadata, skipping")
@@ -167,6 +184,23 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("[DRY-RUN] Would move file")
 			op.Status = types.OperationStatusCompleted
 			operations = append(operations, op)
+
+			// Show NFO files that would be created
+			nfoOps, err := o.createNFOFiles(plan)
+			if err != nil {
+				log.Warn().Err(err).Str("file", plan.DestinationPath).Msg("Failed to plan NFO files")
+			} else if len(nfoOps) > 0 {
+				operations = append(operations, nfoOps...)
+			}
+
+			// Show artwork that would be downloaded
+			artworkOps, err := o.downloadArtworkForPlan(context.Background(), plan)
+			if err != nil {
+				log.Warn().Err(err).Str("file", plan.DestinationPath).Msg("Failed to plan artwork download")
+			} else if len(artworkOps) > 0 {
+				operations = append(operations, artworkOps...)
+			}
+
 			continue
 		}
 
@@ -191,13 +225,21 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 		} else {
 			op.Status = types.OperationStatusCompleted
 			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("File moved successfully")
-			
+
 			// Create NFO files after successful move
 			nfoOps, err := o.createNFOFiles(plan)
 			if err != nil {
 				log.Warn().Err(err).Str("file", plan.DestinationPath).Msg("Failed to create NFO files")
 			} else if len(nfoOps) > 0 {
 				operations = append(operations, nfoOps...)
+			}
+
+			// Download artwork after successful move
+			artworkOps, err := o.downloadArtworkForPlan(context.Background(), plan)
+			if err != nil {
+				log.Warn().Err(err).Str("file", plan.DestinationPath).Msg("Failed to download artwork")
+			} else if len(artworkOps) > 0 {
+				operations = append(operations, artworkOps...)
 			}
 		}
 
@@ -262,13 +304,36 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 			txnIndex := len(txn.Operations)
 			o.transactionMgr.AddOperation(txn, op)
 			operationIndices[len(operations)-1] = txnIndex
+
+			// Show NFO files that would be created
+			nfoOps, err := o.createNFOFiles(plan)
+			if err != nil {
+				log.Warn().Err(err).Str("file", plan.DestinationPath).Msg("Failed to plan NFO files")
+			} else if len(nfoOps) > 0 {
+				for _, nfoOp := range nfoOps {
+					o.transactionMgr.AddOperation(txn, nfoOp)
+					operations = append(operations, nfoOp)
+				}
+			}
+
+			// Show artwork that would be downloaded
+			artworkOps, err := o.downloadArtworkForPlan(context.Background(), plan)
+			if err != nil {
+				log.Warn().Err(err).Str("file", plan.DestinationPath).Msg("Failed to plan artwork download")
+			} else if len(artworkOps) > 0 {
+				for _, artworkOp := range artworkOps {
+					o.transactionMgr.AddOperation(txn, artworkOp)
+					operations = append(operations, artworkOp)
+				}
+			}
+
 			continue
 		}
 
 		// Log operation before executing
 		txnIndex := len(txn.Operations)
 		o.transactionMgr.AddOperation(txn, op)
-		currentOpIndex := len(operations)  // Save the index BEFORE adding any operations
+		currentOpIndex := len(operations) // Save the index BEFORE adding any operations
 		operationIndices[currentOpIndex] = txnIndex
 
 		// Create destination directory
@@ -294,7 +359,7 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 		} else {
 			op.Status = types.OperationStatusCompleted
 			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("File moved successfully")
-			
+
 			// Create NFO files after successful move
 			nfoOps, err := o.createNFOFiles(plan)
 			if err != nil {
@@ -305,11 +370,22 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 					operations = append(operations, nfoOp)
 				}
 			}
+
+			// Download artwork after successful move
+			artworkOps, err := o.downloadArtworkForPlan(context.Background(), plan)
+			if err != nil {
+				log.Warn().Err(err).Str("file", plan.DestinationPath).Msg("Failed to download artwork")
+			} else if len(artworkOps) > 0 {
+				for _, artworkOp := range artworkOps {
+					o.transactionMgr.AddOperation(txn, artworkOp)
+					operations = append(operations, artworkOp)
+				}
+			}
 		}
 
 		// Update operation status in transaction using saved index
 		o.transactionMgr.UpdateOperation(txn, txnIndex, op)
-		
+
 		operations = append(operations, op)
 	}
 
@@ -349,7 +425,7 @@ func findAvailableName(path string) (string, error) {
 // This helper function reduces code duplication for movie, music, and book NFO creation
 func (o *Organizer) createSimpleNFOFile(destDir, filename, mediaType string, content string) types.Operation {
 	nfoPath := filepath.Join(destDir, filename)
-	
+
 	op := types.Operation{
 		Type:        types.OperationCreateFile,
 		Source:      "",
@@ -399,11 +475,11 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 		}
 
 		tv := plan.Metadata.TVMetadata
-		
+
 		// Create tvshow.nfo in the show directory (parent of season directory)
 		showDir := filepath.Dir(destDir)
 		tvshowNFOPath := filepath.Join(showDir, "tvshow.nfo")
-		
+
 		// Check if tvshow.nfo already exists (multiple episodes share same show)
 		if _, err := os.Stat(tvshowNFOPath); err == nil {
 			// File exists, skip creation
@@ -443,7 +519,7 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 
 		// Create season.nfo in the season directory
 		seasonNFOPath := filepath.Join(destDir, "season.nfo")
-		
+
 		// Check if season.nfo already exists (multiple episodes share same season)
 		if _, err := os.Stat(seasonNFOPath); err == nil {
 			// File exists, skip creation
@@ -480,7 +556,7 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 
 			operations = append(operations, op)
 		}
-	
+
 	case types.MediaTypeMusic:
 		// Create album.nfo in the album directory
 		content, err := o.nfoGenerator.GenerateMusicAlbumNFO(plan.Metadata)
@@ -524,7 +600,7 @@ func (o *Organizer) ValidatePlan(plans []Plan) []error {
 
 		// Check destination directory would be writable
 		destDir := filepath.Dir(plan.DestinationPath)
-		
+
 		// Check if parent exists
 		parentInfo, err := os.Stat(filepath.Dir(destDir))
 		if err != nil && !os.IsNotExist(err) {
@@ -539,4 +615,204 @@ func (o *Organizer) ValidatePlan(plans []Plan) []error {
 	}
 
 	return errors
+}
+
+// downloadArtworkForPlan downloads artwork for a media file based on its plan
+// Returns operations for downloaded artwork files for transaction logging
+func (o *Organizer) downloadArtworkForPlan(ctx context.Context, plan Plan) ([]types.Operation, error) {
+	if !o.downloadArtwork || plan.Metadata == nil {
+		return nil, nil
+	}
+
+	// Determine destination directory
+	destDir := filepath.Dir(plan.DestinationPath)
+	operations := make([]types.Operation, 0)
+
+	// Create artwork config
+	artworkConfig := artwork.DefaultConfig()
+	artworkConfig.Force = false // Don't re-download existing artwork
+
+	switch plan.MediaType {
+	case types.MediaTypeMovie:
+		if plan.Metadata.MovieMetadata == nil {
+			return nil, nil
+		}
+
+		downloader := artwork.NewTMDBDownloader(artworkConfig, o.artworkSize)
+
+		// Download poster
+		if plan.Metadata.MovieMetadata.PosterURL != "" {
+			posterPath := filepath.Join(destDir, "poster.jpg")
+			if o.dryRun {
+				log.Info().Str("dest", posterPath).Msg("[DRY-RUN] Would download movie poster")
+				operations = append(operations, types.Operation{
+					Type:        types.OperationCreateFile,
+					Source:      plan.Metadata.MovieMetadata.PosterURL,
+					Destination: posterPath,
+					Status:      types.OperationStatusCompleted,
+				})
+			} else {
+				err := downloader.DownloadMoviePoster(ctx, plan.Metadata.MovieMetadata.PosterURL, destDir)
+				op := types.Operation{
+					Type:        types.OperationCreateFile,
+					Source:      plan.Metadata.MovieMetadata.PosterURL,
+					Destination: posterPath,
+				}
+				if err != nil {
+					op.Status = types.OperationStatusFailed
+					op.Error = err
+					log.Warn().Err(err).Msg("Failed to download movie poster")
+				} else {
+					op.Status = types.OperationStatusCompleted
+				}
+				operations = append(operations, op)
+			}
+		}
+
+		// Download backdrop
+		if plan.Metadata.MovieMetadata.BackdropURL != "" {
+			backdropPath := filepath.Join(destDir, "backdrop.jpg")
+			if o.dryRun {
+				log.Info().Str("dest", backdropPath).Msg("[DRY-RUN] Would download movie backdrop")
+				operations = append(operations, types.Operation{
+					Type:        types.OperationCreateFile,
+					Source:      plan.Metadata.MovieMetadata.BackdropURL,
+					Destination: backdropPath,
+					Status:      types.OperationStatusCompleted,
+				})
+			} else {
+				err := downloader.DownloadMovieBackdrop(ctx, plan.Metadata.MovieMetadata.BackdropURL, destDir)
+				op := types.Operation{
+					Type:        types.OperationCreateFile,
+					Source:      plan.Metadata.MovieMetadata.BackdropURL,
+					Destination: backdropPath,
+				}
+				if err != nil {
+					op.Status = types.OperationStatusFailed
+					op.Error = err
+					log.Warn().Err(err).Msg("Failed to download movie backdrop")
+				} else {
+					op.Status = types.OperationStatusCompleted
+				}
+				operations = append(operations, op)
+			}
+		}
+
+	case types.MediaTypeTV:
+		if plan.Metadata.TVMetadata == nil {
+			return nil, nil
+		}
+
+		downloader := artwork.NewTMDBDownloader(artworkConfig, o.artworkSize)
+
+		// Download TV show poster (to show directory)
+		if plan.Metadata.TVMetadata.PosterURL != "" {
+			// Extract show directory (parent of season directory)
+			seasonDir := filepath.Dir(plan.DestinationPath)
+			showDir := filepath.Dir(seasonDir)
+			posterPath := filepath.Join(showDir, "poster.jpg")
+
+			if o.dryRun {
+				log.Info().Str("dest", posterPath).Msg("[DRY-RUN] Would download TV show poster")
+				operations = append(operations, types.Operation{
+					Type:        types.OperationCreateFile,
+					Source:      plan.Metadata.TVMetadata.PosterURL,
+					Destination: posterPath,
+					Status:      types.OperationStatusCompleted,
+				})
+			} else {
+				// Only download if it doesn't already exist
+				if !artwork.FileExists(posterPath) {
+					err := downloader.DownloadTVPoster(ctx, plan.Metadata.TVMetadata.PosterURL, showDir)
+					op := types.Operation{
+						Type:        types.OperationCreateFile,
+						Source:      plan.Metadata.TVMetadata.PosterURL,
+						Destination: posterPath,
+					}
+					if err != nil {
+						op.Status = types.OperationStatusFailed
+						op.Error = err
+						log.Warn().Err(err).Msg("Failed to download TV show poster")
+					} else {
+						op.Status = types.OperationStatusCompleted
+					}
+					operations = append(operations, op)
+				}
+			}
+		}
+
+	case types.MediaTypeMusic:
+		if plan.Metadata.MusicMetadata == nil {
+			return nil, nil
+		}
+
+		downloader := artwork.NewCoverArtDownloader(artworkConfig, o.artworkSize)
+
+		// Download album cover
+		if plan.Metadata.MusicMetadata.MusicBrainzRID != "" {
+			coverPath := filepath.Join(destDir, "cover.jpg")
+			if o.dryRun {
+				log.Info().Str("dest", coverPath).Msg("[DRY-RUN] Would download album cover")
+				operations = append(operations, types.Operation{
+					Type:        types.OperationCreateFile,
+					Source:      plan.Metadata.MusicMetadata.MusicBrainzRID,
+					Destination: coverPath,
+					Status:      types.OperationStatusCompleted,
+				})
+			} else {
+				err := downloader.DownloadAlbumCover(ctx, plan.Metadata.MusicMetadata.MusicBrainzRID, destDir)
+				op := types.Operation{
+					Type:        types.OperationCreateFile,
+					Source:      plan.Metadata.MusicMetadata.MusicBrainzRID,
+					Destination: coverPath,
+				}
+				if err != nil {
+					op.Status = types.OperationStatusFailed
+					op.Error = err
+					log.Warn().Err(err).Msg("Failed to download album cover")
+				} else {
+					op.Status = types.OperationStatusCompleted
+				}
+				operations = append(operations, op)
+			}
+		}
+
+	case types.MediaTypeBook:
+		if plan.Metadata.BookMetadata == nil {
+			return nil, nil
+		}
+
+		downloader := artwork.NewOpenLibraryDownloader(artworkConfig, o.artworkSize)
+
+		// Download book cover (prefer ISBN)
+		coverPath := filepath.Join(destDir, "cover.jpg")
+		if plan.Metadata.BookMetadata.ISBN != "" {
+			if o.dryRun {
+				log.Info().Str("dest", coverPath).Msg("[DRY-RUN] Would download book cover")
+				operations = append(operations, types.Operation{
+					Type:        types.OperationCreateFile,
+					Source:      plan.Metadata.BookMetadata.ISBN,
+					Destination: coverPath,
+					Status:      types.OperationStatusCompleted,
+				})
+			} else {
+				err := downloader.DownloadBookCoverByISBN(ctx, plan.Metadata.BookMetadata.ISBN, destDir)
+				op := types.Operation{
+					Type:        types.OperationCreateFile,
+					Source:      plan.Metadata.BookMetadata.ISBN,
+					Destination: coverPath,
+				}
+				if err != nil {
+					op.Status = types.OperationStatusFailed
+					op.Error = err
+					log.Warn().Err(err).Msg("Failed to download book cover")
+				} else {
+					op.Status = types.OperationStatusCompleted
+				}
+				operations = append(operations, op)
+			}
+		}
+	}
+
+	return operations, nil
 }

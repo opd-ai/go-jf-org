@@ -5,22 +5,23 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/opd-ai/go-jf-org/internal/artwork"
 	"github.com/opd-ai/go-jf-org/pkg/types"
 )
 
 func TestPlanOrganization(t *testing.T) {
 	// Create temp directory with test files
 	tmpDir := t.TempDir()
-	
+
 	// Create test files
 	movieFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	tvFile := filepath.Join(tmpDir, "Breaking.Bad.S01E01.mkv")
 	unknownFile := filepath.Join(tmpDir, "unknown.txt")
-	
+
 	createTestFile(t, movieFile)
 	createTestFile(t, tvFile)
 	createTestFile(t, unknownFile)
-	
+
 	files := []string{movieFile, tvFile, unknownFile}
 	destRoot := filepath.Join(tmpDir, "organized")
 
@@ -88,13 +89,13 @@ func TestPlanOrganization(t *testing.T) {
 
 func TestPlanOrganization_ConflictDetection(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	// Create test file
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
-	
+
 	// Create conflicting destination file
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
 	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
@@ -123,10 +124,10 @@ func TestPlanOrganization_ConflictDetection(t *testing.T) {
 
 func TestExecute_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
 
@@ -163,10 +164,10 @@ func TestExecute_DryRun(t *testing.T) {
 
 func TestExecute_RealMove(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
 
@@ -203,10 +204,10 @@ func TestExecute_RealMove(t *testing.T) {
 
 func TestExecute_ConflictSkip(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
 
@@ -238,13 +239,13 @@ func TestExecute_ConflictSkip(t *testing.T) {
 
 func TestExecute_ConflictRename(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
-	
+
 	// Create conflicting file
 	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 		t.Fatal(err)
@@ -288,9 +289,9 @@ func TestExecute_ConflictRename(t *testing.T) {
 
 func TestFindAvailableName(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	basePath := filepath.Join(tmpDir, "movie.mkv")
-	
+
 	// First call should return -1 suffix
 	result1, err := findAvailableName(basePath)
 	if err != nil {
@@ -300,10 +301,10 @@ func TestFindAvailableName(t *testing.T) {
 	if result1 != expected1 {
 		t.Errorf("findAvailableName() = %q, want %q", result1, expected1)
 	}
-	
+
 	// Create -1 file
 	createTestFile(t, result1)
-	
+
 	// Second call should return -2 suffix
 	result2, err := findAvailableName(basePath)
 	if err != nil {
@@ -317,10 +318,10 @@ func TestFindAvailableName(t *testing.T) {
 
 func TestValidatePlan(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	existingFile := filepath.Join(tmpDir, "existing.mkv")
 	createTestFile(t, existingFile)
-	
+
 	nonExistentFile := filepath.Join(tmpDir, "nonexistent.mkv")
 
 	o := NewOrganizer(false)
@@ -366,7 +367,7 @@ func TestValidatePlan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			errs := o.ValidatePlan(tt.plans)
 			hasError := len(errs) > 0
-			
+
 			if hasError != tt.wantError {
 				t.Errorf("ValidatePlan() errors = %v, wantError %v", errs, tt.wantError)
 			}
@@ -377,18 +378,18 @@ func TestValidatePlan(t *testing.T) {
 // Helper function to create test files
 func createTestFile(t *testing.T, path string) {
 	t.Helper()
-	
+
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	
+
 	f, err := os.Create(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer f.Close()
-	
+
 	// Write some content so file has size
 	if _, err := f.WriteString("test content"); err != nil {
 		t.Fatal(err)
@@ -404,25 +405,230 @@ func TestPlanOrganization_NilMetadataHandling(t *testing.T) {
 	// Current implementation: parsers never return nil metadata, but the code
 	// now includes a defensive check after error handling to guard against
 	// future modifications that might change this behavior.
-	
+
 	tmpDir := t.TempDir()
 	movieFile := filepath.Join(tmpDir, "The.Matrix.1999.mkv")
 	createTestFile(t, movieFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	o := NewOrganizer(false)
-	
+
 	// This should work normally - metadata will be valid
 	plans, err := o.PlanOrganization([]string{movieFile}, destRoot, types.MediaTypeUnknown)
 	if err != nil {
 		t.Fatalf("PlanOrganization() error = %v", err)
 	}
-	
+
 	// Should successfully create a plan
 	if len(plans) != 1 {
 		t.Errorf("expected 1 plan, got %d", len(plans))
 	}
-	
+
 	// The defensive nil check is in place at organizer.go:99-103
 	// If parsers are modified to return (nil, nil), the code will handle it gracefully
+}
+
+func TestSetDownloadArtwork(t *testing.T) {
+	tests := []struct {
+		name     string
+		download bool
+		size     artwork.ImageSize
+	}{
+		{
+			name:     "enable with small size",
+			download: true,
+			size:     artwork.SizeSmall,
+		},
+		{
+			name:     "enable with medium size",
+			download: true,
+			size:     artwork.SizeMedium,
+		},
+		{
+			name:     "enable with large size",
+			download: true,
+			size:     artwork.SizeLarge,
+		},
+		{
+			name:     "enable with original size",
+			download: true,
+			size:     artwork.SizeOriginal,
+		},
+		{
+			name:     "disable artwork",
+			download: false,
+			size:     artwork.SizeMedium,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := NewOrganizer(false)
+
+			// Call SetDownloadArtwork
+			o.SetDownloadArtwork(tt.download, tt.size)
+
+			// Verify the fields are set correctly
+			if o.downloadArtwork != tt.download {
+				t.Errorf("downloadArtwork = %v, want %v", o.downloadArtwork, tt.download)
+			}
+
+			if o.artworkSize != tt.size {
+				t.Errorf("artworkSize = %v, want %v", o.artworkSize, tt.size)
+			}
+		})
+	}
+}
+
+func TestDownloadArtworkForPlan_DryRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	o := NewOrganizer(true) // Dry run mode
+	o.SetDownloadArtwork(true, artwork.SizeMedium)
+
+	tests := []struct {
+		name      string
+		mediaType types.MediaType
+		metadata  *types.Metadata
+		wantOps   int
+	}{
+		{
+			name:      "movie with poster and backdrop",
+			mediaType: types.MediaTypeMovie,
+			metadata: &types.Metadata{
+				Title: "Test Movie",
+				Year:  2020,
+				MovieMetadata: &types.MovieMetadata{
+					PosterURL:   "/poster.jpg",
+					BackdropURL: "/backdrop.jpg",
+				},
+			},
+			wantOps: 2, // poster + backdrop
+		},
+		{
+			name:      "movie with only poster",
+			mediaType: types.MediaTypeMovie,
+			metadata: &types.Metadata{
+				Title: "Test Movie",
+				Year:  2020,
+				MovieMetadata: &types.MovieMetadata{
+					PosterURL: "/poster.jpg",
+				},
+			},
+			wantOps: 1, // poster only
+		},
+		{
+			name:      "TV show with poster",
+			mediaType: types.MediaTypeTV,
+			metadata: &types.Metadata{
+				Title: "Test Show",
+				Year:  2020,
+				TVMetadata: &types.TVMetadata{
+					ShowTitle: "Test Show",
+					Season:    1,
+					Episode:   1,
+					PosterURL: "/poster.jpg",
+				},
+			},
+			wantOps: 1, // show poster
+		},
+		{
+			name:      "music with cover",
+			mediaType: types.MediaTypeMusic,
+			metadata: &types.Metadata{
+				Title: "Test Album",
+				Year:  2020,
+				MusicMetadata: &types.MusicMetadata{
+					Artist:         "Test Artist",
+					Album:          "Test Album",
+					MusicBrainzRID: "test-release-id",
+				},
+			},
+			wantOps: 1, // album cover
+		},
+		{
+			name:      "book with cover",
+			mediaType: types.MediaTypeBook,
+			metadata: &types.Metadata{
+				Title: "Test Book",
+				Year:  2020,
+				BookMetadata: &types.BookMetadata{
+					Author: "Test Author",
+					ISBN:   "1234567890",
+				},
+			},
+			wantOps: 1, // book cover
+		},
+		{
+			name:      "no metadata",
+			mediaType: types.MediaTypeMovie,
+			metadata:  nil,
+			wantOps:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			destPath := filepath.Join(tmpDir, "test.mkv")
+			if tt.mediaType == types.MediaTypeTV {
+				destPath = filepath.Join(tmpDir, "Show", "Season 01", "test.mkv")
+			}
+
+			plan := Plan{
+				SourcePath:      filepath.Join(tmpDir, "source.mkv"),
+				DestinationPath: destPath,
+				MediaType:       tt.mediaType,
+				Metadata:        tt.metadata,
+				Operation:       types.OperationMove,
+			}
+
+			ops, err := o.downloadArtworkForPlan(nil, plan)
+			if err != nil {
+				t.Fatalf("downloadArtworkForPlan() error = %v", err)
+			}
+
+			if len(ops) != tt.wantOps {
+				t.Errorf("downloadArtworkForPlan() got %d operations, want %d", len(ops), tt.wantOps)
+			}
+
+			// All operations should be completed in dry-run mode
+			for i, op := range ops {
+				if op.Status != types.OperationStatusCompleted {
+					t.Errorf("operation %d status = %v, want %v", i, op.Status, types.OperationStatusCompleted)
+				}
+				if op.Type != types.OperationCreateFile {
+					t.Errorf("operation %d type = %v, want %v", i, op.Type, types.OperationCreateFile)
+				}
+			}
+		})
+	}
+}
+
+func TestDownloadArtworkForPlan_Disabled(t *testing.T) {
+	tmpDir := t.TempDir()
+	o := NewOrganizer(false)
+	// Don't enable artwork downloads
+
+	plan := Plan{
+		SourcePath:      filepath.Join(tmpDir, "source.mkv"),
+		DestinationPath: filepath.Join(tmpDir, "dest.mkv"),
+		MediaType:       types.MediaTypeMovie,
+		Metadata: &types.Metadata{
+			Title: "Test Movie",
+			Year:  2020,
+			MovieMetadata: &types.MovieMetadata{
+				PosterURL: "/poster.jpg",
+			},
+		},
+		Operation: types.OperationMove,
+	}
+
+	ops, err := o.downloadArtworkForPlan(nil, plan)
+	if err != nil {
+		t.Fatalf("downloadArtworkForPlan() error = %v", err)
+	}
+
+	// Should return no operations when artwork download is disabled
+	if len(ops) != 0 {
+		t.Errorf("downloadArtworkForPlan() got %d operations, want 0", len(ops))
+	}
 }

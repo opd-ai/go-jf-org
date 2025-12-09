@@ -38,7 +38,7 @@ var configInitForce bool
 func init() {
 	rootCmd.AddCommand(configCmd)
 	configCmd.AddCommand(configInitCmd)
-	
+
 	configInitCmd.Flags().BoolVarP(&configInitForce, "force", "f", false, "overwrite existing configuration file")
 }
 

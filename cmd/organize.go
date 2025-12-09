@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
+	"github.com/opd-ai/go-jf-org/internal/artwork"
 	"github.com/opd-ai/go-jf-org/internal/organizer"
 	"github.com/opd-ai/go-jf-org/internal/safety"
 	"github.com/opd-ai/go-jf-org/internal/util"
@@ -15,16 +16,16 @@ import (
 )
 
 var (
-	organizeDest            string
-	organizeMediaType       string
+	organizeDest             string
+	organizeMediaType        string
 	organizeConflictStrategy string
-	organizeDryRun          bool
-	organizeNoTransaction   bool
-	organizeCreateNFO       bool
-	organizeJSONOutput      bool
-	organizeInteractive     bool
-	organizeDownloadArtwork bool
-	organizeArtworkSize     string
+	organizeDryRun           bool
+	organizeNoTransaction    bool
+	organizeCreateNFO        bool
+	organizeJSONOutput       bool
+	organizeInteractive      bool
+	organizeDownloadArtwork  bool
+	organizeArtworkSize      string
 )
 
 var organizeCmd = &cobra.Command{
@@ -84,12 +85,12 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Handle interactive flag
 	if organizeInteractive {
 		organizeConflictStrategy = "interactive"
 	}
-	
+
 	// Validate conflict strategy
 	validStrategies := map[string]bool{
 		"skip":        true,
@@ -99,7 +100,7 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	if !validStrategies[organizeConflictStrategy] {
 		return fmt.Errorf("invalid conflict strategy: %s (must be skip, rename, or interactive)", organizeConflictStrategy)
 	}
-	
+
 	// Interactive mode requires TTY
 	if organizeConflictStrategy == "interactive" {
 		if organizeJSONOutput {
@@ -136,19 +137,19 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	if !organizeJSONOutput {
 		scanSpinner.Start()
 	}
-	
+
 	scanTimer := stats.NewTimer("scan")
 	result, err := s.Scan(absPath)
 	scanTimer.Stop()
-	
+
 	if !organizeJSONOutput {
 		scanSpinner.Stop()
 	}
-	
+
 	if err != nil {
 		return fmt.Errorf("scan failed: %w", err)
 	}
-	
+
 	stats.Add("files_scanned", len(result.Files))
 
 	if len(result.Files) == 0 {
@@ -161,7 +162,7 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	// Create organizer with transaction support
 	var org *organizer.Organizer
 	var tm *safety.TransactionManager
-	
+
 	if !organizeNoTransaction && !organizeDryRun {
 		logDir, err := safety.GetDefaultLogDir()
 		if err != nil {
@@ -179,12 +180,31 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	} else {
 		org = organizer.NewOrganizer(organizeDryRun)
 	}
-	
+
 	// Configure NFO generation
 	org.SetCreateNFO(organizeCreateNFO)
-	
+
 	if organizeCreateNFO {
 		log.Info().Msg("NFO file generation enabled")
+	}
+
+	// Configure artwork downloads
+	if organizeDownloadArtwork {
+		var artworkSize artwork.ImageSize
+		switch organizeArtworkSize {
+		case "small":
+			artworkSize = artwork.SizeSmall
+		case "medium":
+			artworkSize = artwork.SizeMedium
+		case "large":
+			artworkSize = artwork.SizeLarge
+		case "original":
+			artworkSize = artwork.SizeOriginal
+		default:
+			artworkSize = artwork.SizeMedium
+		}
+		org.SetDownloadArtwork(true, artworkSize)
+		log.Info().Str("size", organizeArtworkSize).Msg("Artwork download enabled")
 	}
 
 	// Plan organization
@@ -265,7 +285,7 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 			fmt.Println("Organizing files...")
 		}
 	}
-	
+
 	// Handle interactive conflict resolution
 	if organizeConflictStrategy == "interactive" && !organizeDryRun {
 		plans = handleInteractiveConflicts(plans)
@@ -273,7 +293,7 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 
 	var ops []types.Operation
 	var txnID string
-	
+
 	// Use the actual conflict strategy for execution
 	// If interactive, conflicts have been resolved, so use "skip" for any remaining
 	execStrategy := organizeConflictStrategy
@@ -320,7 +340,7 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-	
+
 	stats.Add("files_organized", successCount)
 	stats.Add("files_failed", failedCount)
 	stats.Add("files_skipped", skippedCount)
@@ -370,10 +390,10 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 	if organizeDryRun && !organizeJSONOutput {
 		fmt.Println("\nTo execute this organization, run the same command without --dry-run")
 	}
-	
+
 	// Finalize and display statistics
 	stats.Finish()
-	
+
 	if organizeJSONOutput {
 		jsonStr, err := stats.ToJSON()
 		if err != nil {
@@ -397,23 +417,23 @@ func runOrganize(cmd *cobra.Command, args []string) error {
 func handleInteractiveConflicts(plans []organizer.Plan) []organizer.Plan {
 	skipAll := false
 	result := make([]organizer.Plan, 0, len(plans))
-	
+
 	for _, plan := range plans {
 		if !plan.Conflict {
 			// No conflict, keep as-is
 			result = append(result, plan)
 			continue
 		}
-		
+
 		// Skip remaining conflicts if user chose "skip all"
 		if skipAll {
 			log.Info().Str("file", plan.SourcePath).Msg("Skipping due to 'skip all' choice")
 			continue
 		}
-		
+
 		// Prompt user for resolution
 		choice := promptConflictResolution(plan.SourcePath, plan.DestinationPath)
-		
+
 		switch choice {
 		case "skip":
 			log.Info().Str("file", plan.SourcePath).Msg("User chose to skip")
@@ -437,7 +457,7 @@ func handleInteractiveConflicts(plans []organizer.Plan) []organizer.Plan {
 			log.Warn().Str("file", plan.SourcePath).Str("choice", choice).Msg("Unknown choice, skipping")
 		}
 	}
-	
+
 	return result
 }
 
@@ -445,13 +465,13 @@ func handleInteractiveConflicts(plans []organizer.Plan) []organizer.Plan {
 func findAvailableName(path string) (string, error) {
 	ext := filepath.Ext(path)
 	base := path[:len(path)-len(ext)]
-	
+
 	for i := 1; i < 1000; i++ {
 		newPath := fmt.Sprintf("%s-%d%s", base, i, ext)
 		if _, err := os.Stat(newPath); os.IsNotExist(err) {
 			return newPath, nil
 		}
 	}
-	
+
 	return "", fmt.Errorf("could not find available filename after 1000 attempts")
 }

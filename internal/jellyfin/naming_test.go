@@ -213,10 +213,10 @@ func TestGetMusicDir(t *testing.T) {
 	n := NewNaming()
 
 	tests := []struct {
-		name        string
-		metadata    *types.Metadata
-		wantArtist  string
-		wantAlbum   string
+		name       string
+		metadata   *types.Metadata
+		wantArtist string
+		wantAlbum  string
 	}{
 		{
 			name: "with year",
@@ -289,7 +289,7 @@ func TestGetMusicTrackName(t *testing.T) {
 		{
 			name: "without track number",
 			metadata: &types.Metadata{
-				Title: "Some Song",
+				Title:         "Some Song",
 				MusicMetadata: &types.MusicMetadata{},
 			},
 			ext:  ".flac",

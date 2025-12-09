@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/opd-ai/go-jf-org/internal/organizer"
@@ -62,11 +63,6 @@ func TestFindAvailableName(t *testing.T) {
 			// Check that result file doesn't exist
 			if _, err := os.Stat(result); err == nil {
 				t.Error("Result file already exists")
-			}
-			
-			// Clean up
-			for _, f := range tt.existingFiles {
-				os.Remove(filepath.Join(tmpDir, f))
 			}
 		})
 	}
@@ -166,4 +162,80 @@ func TestInteractiveValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPromptConflictResolution(t *testing.T) {
+tests := []struct {
+name     string
+input    string
+expected string
+}{
+{
+name:     "skip with s",
+input:    "s\n",
+expected: "skip",
+},
+{
+name:     "skip with empty input",
+input:    "\n",
+expected: "skip",
+},
+{
+name:     "rename with r",
+input:    "r\n",
+expected: "rename",
+},
+{
+name:     "rename with full word",
+input:    "rename\n",
+expected: "rename",
+},
+{
+name:     "skip-all with a",
+input:    "a\n",
+expected: "skip-all",
+},
+{
+name:     "skip-all with 'all'",
+input:    "all\n",
+expected: "skip-all",
+},
+{
+name:     "skip-all with 'skip-all'",
+input:    "skip-all\n",
+expected: "skip-all",
+},
+{
+name:     "skip-all with 'skipall'",
+input:    "skipall\n",
+expected: "skip-all",
+},
+{
+name:     "invalid input defaults to skip",
+input:    "invalid\n",
+expected: "skip",
+},
+{
+name:     "case insensitive - uppercase R",
+input:    "R\n",
+expected: "rename",
+},
+{
+name:     "case insensitive - uppercase A",
+input:    "A\n",
+expected: "skip-all",
+},
+}
+
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+// Mock stdin with strings.NewReader
+reader := strings.NewReader(tt.input)
+result := promptConflictResolutionWithReader("/source/file.mkv", "/dest/file.mkv", reader)
+
+if result != tt.expected {
+t.Errorf("Expected %s, got %s", tt.expected, result)
+}
+})
+}
 }

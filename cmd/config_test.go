@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -66,7 +67,7 @@ func TestConfigInit(t *testing.T) {
 				}
 				
 				for _, section := range requiredSections {
-					if !contains(contentStr, section) {
+					if !strings.Contains(contentStr, section) {
 						t.Errorf("Config file missing section: %s", section)
 					}
 				}
@@ -144,19 +145,4 @@ func TestConfigInit(t *testing.T) {
 			}
 		})
 	}
-}
-
-// contains checks if a string contains a substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		(s == substr || len(s) > len(substr) && containsHelper(s, substr))
-}
-
-func containsHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

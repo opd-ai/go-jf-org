@@ -429,11 +429,6 @@ func handleInteractiveConflicts(plans []organizer.Plan) []organizer.Plan {
 			plan.Conflict = false // Conflict resolved
 			log.Info().Str("file", plan.SourcePath).Str("new_dest", plan.DestinationPath).Msg("User chose to rename")
 			result = append(result, plan)
-		case "overwrite":
-			// Keep destination as-is, but mark conflict as resolved
-			plan.Conflict = false
-			log.Warn().Str("file", plan.SourcePath).Msg("User chose to overwrite existing file")
-			result = append(result, plan)
 		default:
 			log.Warn().Str("file", plan.SourcePath).Str("choice", choice).Msg("Unknown choice, skipping")
 		}

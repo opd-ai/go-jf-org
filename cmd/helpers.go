@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -65,8 +66,14 @@ func createScanner() *scanner.Scanner {
 }
 
 // promptConflictResolution prompts the user for how to handle a conflict
-// Returns: "skip", "rename", or "overwrite"
+// Returns: "skip", "rename", or "skip-all"
 func promptConflictResolution(sourcePath, destPath string) string {
+	return promptConflictResolutionWithReader(sourcePath, destPath, os.Stdin)
+}
+
+// promptConflictResolutionWithReader prompts the user for conflict resolution using the provided reader
+// This is separated for testability
+func promptConflictResolutionWithReader(sourcePath, destPath string, reader io.Reader) string {
 	fmt.Println()
 	fmt.Printf("⚠️  Conflict detected:\n")
 	fmt.Printf("   Source:      %s\n", sourcePath)
@@ -75,12 +82,11 @@ func promptConflictResolution(sourcePath, destPath string) string {
 	fmt.Println("How would you like to resolve this conflict?")
 	fmt.Println("  [s] Skip - Leave original file, don't move (default)")
 	fmt.Println("  [r] Rename - Add suffix to filename (e.g., file-1.mkv)")
-	fmt.Println("  [o] Overwrite - Replace existing file")
 	fmt.Println("  [a] Skip all - Skip this and all remaining conflicts")
-	fmt.Print("\nYour choice [s/r/o/a]: ")
+	fmt.Print("\nYour choice [s/r/a]: ")
 	
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
+	bufReader := bufio.NewReader(reader)
+	input, err := bufReader.ReadString('\n')
 	if err != nil {
 		return "skip"
 	}
@@ -89,8 +95,6 @@ func promptConflictResolution(sourcePath, destPath string) string {
 	switch choice {
 	case "r", "rename":
 		return "rename"
-	case "o", "overwrite":
-		return "overwrite"
 	case "a", "all", "skipall", "skip-all":
 		return "skip-all"
 	default:

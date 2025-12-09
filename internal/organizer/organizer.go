@@ -472,6 +472,66 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 
 			operations = append(operations, op)
 		}
+	
+	case types.MediaTypeMusic:
+		// Create album.nfo in the album directory
+		nfoPath := filepath.Join(destDir, "album.nfo")
+		content, err := o.nfoGenerator.GenerateMusicAlbumNFO(plan.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate music album NFO: %w", err)
+		}
+
+		op := types.Operation{
+			Type:        types.OperationCreateFile,
+			Source:      "",
+			Destination: nfoPath,
+			Status:      types.OperationStatusPending,
+		}
+
+		if !o.dryRun {
+			if err := os.WriteFile(nfoPath, []byte(content), 0644); err != nil {
+				op.Status = types.OperationStatusFailed
+				op.Error = fmt.Errorf("failed to write album NFO file: %w", err)
+			} else {
+				op.Status = types.OperationStatusCompleted
+				log.Info().Str("path", nfoPath).Msg("Created album NFO file")
+			}
+		} else {
+			op.Status = types.OperationStatusCompleted
+			log.Info().Str("path", nfoPath).Msg("[DRY-RUN] Would create album NFO file")
+		}
+
+		operations = append(operations, op)
+
+	case types.MediaTypeBook:
+		// Create book.nfo in the book directory
+		nfoPath := filepath.Join(destDir, "book.nfo")
+		content, err := o.nfoGenerator.GenerateBookNFO(plan.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate book NFO: %w", err)
+		}
+
+		op := types.Operation{
+			Type:        types.OperationCreateFile,
+			Source:      "",
+			Destination: nfoPath,
+			Status:      types.OperationStatusPending,
+		}
+
+		if !o.dryRun {
+			if err := os.WriteFile(nfoPath, []byte(content), 0644); err != nil {
+				op.Status = types.OperationStatusFailed
+				op.Error = fmt.Errorf("failed to write book NFO file: %w", err)
+			} else {
+				op.Status = types.OperationStatusCompleted
+				log.Info().Str("path", nfoPath).Msg("Created book NFO file")
+			}
+		} else {
+			op.Status = types.OperationStatusCompleted
+			log.Info().Str("path", nfoPath).Msg("[DRY-RUN] Would create book NFO file")
+		}
+
+		operations = append(operations, op)
 	}
 
 	return operations, nil

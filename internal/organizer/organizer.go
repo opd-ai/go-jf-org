@@ -345,6 +345,34 @@ func findAvailableName(path string) (string, error) {
 	return "", fmt.Errorf("could not find available filename after 1000 attempts for %s", path)
 }
 
+// createSimpleNFOFile creates a single NFO file with the given parameters
+// This helper function reduces code duplication for movie, music, and book NFO creation
+func (o *Organizer) createSimpleNFOFile(destDir, filename, mediaType string, content string) types.Operation {
+	nfoPath := filepath.Join(destDir, filename)
+	
+	op := types.Operation{
+		Type:        types.OperationCreateFile,
+		Source:      "",
+		Destination: nfoPath,
+		Status:      types.OperationStatusPending,
+	}
+
+	if !o.dryRun {
+		if err := os.WriteFile(nfoPath, []byte(content), 0644); err != nil {
+			op.Status = types.OperationStatusFailed
+			op.Error = fmt.Errorf("failed to write %s NFO file: %w", mediaType, err)
+		} else {
+			op.Status = types.OperationStatusCompleted
+			log.Info().Str("path", nfoPath).Msgf("Created %s NFO file", mediaType)
+		}
+	} else {
+		op.Status = types.OperationStatusCompleted
+		log.Info().Str("path", nfoPath).Msgf("[DRY-RUN] Would create %s NFO file", mediaType)
+	}
+
+	return op
+}
+
 // createNFOFiles creates NFO files for the media based on type and metadata
 func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 	if !o.createNFO {
@@ -357,32 +385,12 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 	switch plan.MediaType {
 	case types.MediaTypeMovie:
 		// Create movie.nfo in the movie directory
-		nfoPath := filepath.Join(destDir, "movie.nfo")
 		content, err := o.nfoGenerator.GenerateMovieNFO(plan.Metadata)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate movie NFO: %w", err)
 		}
 
-		op := types.Operation{
-			Type:        types.OperationCreateFile,
-			Source:      "",
-			Destination: nfoPath,
-			Status:      types.OperationStatusPending,
-		}
-
-		if !o.dryRun {
-			if err := os.WriteFile(nfoPath, []byte(content), 0644); err != nil {
-				op.Status = types.OperationStatusFailed
-				op.Error = fmt.Errorf("failed to write NFO file: %w", err)
-			} else {
-				op.Status = types.OperationStatusCompleted
-				log.Info().Str("path", nfoPath).Msg("Created movie NFO file")
-			}
-		} else {
-			op.Status = types.OperationStatusCompleted
-			log.Info().Str("path", nfoPath).Msg("[DRY-RUN] Would create movie NFO file")
-		}
-
+		op := o.createSimpleNFOFile(destDir, "movie.nfo", "movie", content)
 		operations = append(operations, op)
 
 	case types.MediaTypeTV:
@@ -475,62 +483,22 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 	
 	case types.MediaTypeMusic:
 		// Create album.nfo in the album directory
-		nfoPath := filepath.Join(destDir, "album.nfo")
 		content, err := o.nfoGenerator.GenerateMusicAlbumNFO(plan.Metadata)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate music album NFO: %w", err)
 		}
 
-		op := types.Operation{
-			Type:        types.OperationCreateFile,
-			Source:      "",
-			Destination: nfoPath,
-			Status:      types.OperationStatusPending,
-		}
-
-		if !o.dryRun {
-			if err := os.WriteFile(nfoPath, []byte(content), 0644); err != nil {
-				op.Status = types.OperationStatusFailed
-				op.Error = fmt.Errorf("failed to write album NFO file: %w", err)
-			} else {
-				op.Status = types.OperationStatusCompleted
-				log.Info().Str("path", nfoPath).Msg("Created album NFO file")
-			}
-		} else {
-			op.Status = types.OperationStatusCompleted
-			log.Info().Str("path", nfoPath).Msg("[DRY-RUN] Would create album NFO file")
-		}
-
+		op := o.createSimpleNFOFile(destDir, "album.nfo", "album", content)
 		operations = append(operations, op)
 
 	case types.MediaTypeBook:
 		// Create book.nfo in the book directory
-		nfoPath := filepath.Join(destDir, "book.nfo")
 		content, err := o.nfoGenerator.GenerateBookNFO(plan.Metadata)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate book NFO: %w", err)
 		}
 
-		op := types.Operation{
-			Type:        types.OperationCreateFile,
-			Source:      "",
-			Destination: nfoPath,
-			Status:      types.OperationStatusPending,
-		}
-
-		if !o.dryRun {
-			if err := os.WriteFile(nfoPath, []byte(content), 0644); err != nil {
-				op.Status = types.OperationStatusFailed
-				op.Error = fmt.Errorf("failed to write book NFO file: %w", err)
-			} else {
-				op.Status = types.OperationStatusCompleted
-				log.Info().Str("path", nfoPath).Msg("Created book NFO file")
-			}
-		} else {
-			op.Status = types.OperationStatusCompleted
-			log.Info().Str("path", nfoPath).Msg("[DRY-RUN] Would create book NFO file")
-		}
-
+		op := o.createSimpleNFOFile(destDir, "book.nfo", "book", content)
 		operations = append(operations, op)
 	}
 

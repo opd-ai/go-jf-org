@@ -34,10 +34,10 @@ type CoverArtResponse struct {
 
 // CoverArtImage represents a single image from the Cover Art Archive
 type CoverArtImage struct {
-	Types      []string          `json:"types"`
-	Front      bool              `json:"front"`
-	Back       bool              `json:"back"`
-	Image      string            `json:"image"`
+	Types      []string           `json:"types"`
+	Front      bool               `json:"front"`
+	Back       bool               `json:"back"`
+	Image      string             `json:"image"`
 	Thumbnails CoverArtThumbnails `json:"thumbnails"`
 }
 

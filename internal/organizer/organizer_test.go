@@ -12,16 +12,16 @@ import (
 func TestPlanOrganization(t *testing.T) {
 	// Create temp directory with test files
 	tmpDir := t.TempDir()
-	
+
 	// Create test files
 	movieFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	tvFile := filepath.Join(tmpDir, "Breaking.Bad.S01E01.mkv")
 	unknownFile := filepath.Join(tmpDir, "unknown.txt")
-	
+
 	createTestFile(t, movieFile)
 	createTestFile(t, tvFile)
 	createTestFile(t, unknownFile)
-	
+
 	files := []string{movieFile, tvFile, unknownFile}
 	destRoot := filepath.Join(tmpDir, "organized")
 
@@ -89,13 +89,13 @@ func TestPlanOrganization(t *testing.T) {
 
 func TestPlanOrganization_ConflictDetection(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	// Create test file
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
-	
+
 	// Create conflicting destination file
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
 	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
@@ -124,10 +124,10 @@ func TestPlanOrganization_ConflictDetection(t *testing.T) {
 
 func TestExecute_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
 
@@ -164,10 +164,10 @@ func TestExecute_DryRun(t *testing.T) {
 
 func TestExecute_RealMove(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
 
@@ -204,10 +204,10 @@ func TestExecute_RealMove(t *testing.T) {
 
 func TestExecute_ConflictSkip(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
 
@@ -239,13 +239,13 @@ func TestExecute_ConflictSkip(t *testing.T) {
 
 func TestExecute_ConflictRename(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	sourceFile := filepath.Join(tmpDir, "The.Matrix.1999.1080p.mkv")
 	createTestFile(t, sourceFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	destPath := filepath.Join(destRoot, "The Matrix (1999)", "The Matrix (1999).mkv")
-	
+
 	// Create conflicting file
 	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 		t.Fatal(err)
@@ -289,9 +289,9 @@ func TestExecute_ConflictRename(t *testing.T) {
 
 func TestFindAvailableName(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	basePath := filepath.Join(tmpDir, "movie.mkv")
-	
+
 	// First call should return -1 suffix
 	result1, err := findAvailableName(basePath)
 	if err != nil {
@@ -301,10 +301,10 @@ func TestFindAvailableName(t *testing.T) {
 	if result1 != expected1 {
 		t.Errorf("findAvailableName() = %q, want %q", result1, expected1)
 	}
-	
+
 	// Create -1 file
 	createTestFile(t, result1)
-	
+
 	// Second call should return -2 suffix
 	result2, err := findAvailableName(basePath)
 	if err != nil {
@@ -318,10 +318,10 @@ func TestFindAvailableName(t *testing.T) {
 
 func TestValidatePlan(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	existingFile := filepath.Join(tmpDir, "existing.mkv")
 	createTestFile(t, existingFile)
-	
+
 	nonExistentFile := filepath.Join(tmpDir, "nonexistent.mkv")
 
 	o := NewOrganizer(false)
@@ -367,7 +367,7 @@ func TestValidatePlan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			errs := o.ValidatePlan(tt.plans)
 			hasError := len(errs) > 0
-			
+
 			if hasError != tt.wantError {
 				t.Errorf("ValidatePlan() errors = %v, wantError %v", errs, tt.wantError)
 			}
@@ -378,18 +378,18 @@ func TestValidatePlan(t *testing.T) {
 // Helper function to create test files
 func createTestFile(t *testing.T, path string) {
 	t.Helper()
-	
+
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	
+
 	f, err := os.Create(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer f.Close()
-	
+
 	// Write some content so file has size
 	if _, err := f.WriteString("test content"); err != nil {
 		t.Fatal(err)
@@ -405,25 +405,25 @@ func TestPlanOrganization_NilMetadataHandling(t *testing.T) {
 	// Current implementation: parsers never return nil metadata, but the code
 	// now includes a defensive check after error handling to guard against
 	// future modifications that might change this behavior.
-	
+
 	tmpDir := t.TempDir()
 	movieFile := filepath.Join(tmpDir, "The.Matrix.1999.mkv")
 	createTestFile(t, movieFile)
-	
+
 	destRoot := filepath.Join(tmpDir, "organized")
 	o := NewOrganizer(false)
-	
+
 	// This should work normally - metadata will be valid
 	plans, err := o.PlanOrganization([]string{movieFile}, destRoot, types.MediaTypeUnknown)
 	if err != nil {
 		t.Fatalf("PlanOrganization() error = %v", err)
 	}
-	
+
 	// Should successfully create a plan
 	if len(plans) != 1 {
 		t.Errorf("expected 1 plan, got %d", len(plans))
 	}
-	
+
 	// The defensive nil check is in place at organizer.go:99-103
 	// If parsers are modified to return (nil, nil), the code will handle it gracefully
 }
@@ -464,15 +464,15 @@ func TestSetDownloadArtwork(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := NewOrganizer(false)
-			
+
 			// Call SetDownloadArtwork
 			o.SetDownloadArtwork(tt.download, tt.size)
-			
+
 			// Verify the fields are set correctly
 			if o.downloadArtwork != tt.download {
 				t.Errorf("downloadArtwork = %v, want %v", o.downloadArtwork, tt.download)
 			}
-			
+
 			if o.artworkSize != tt.size {
 				t.Errorf("artworkSize = %v, want %v", o.artworkSize, tt.size)
 			}
@@ -484,7 +484,7 @@ func TestDownloadArtworkForPlan_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 	o := NewOrganizer(true) // Dry run mode
 	o.SetDownloadArtwork(true, artwork.SizeMedium)
-	
+
 	tests := []struct {
 		name      string
 		mediaType types.MediaType
@@ -572,7 +572,7 @@ func TestDownloadArtworkForPlan_DryRun(t *testing.T) {
 			if tt.mediaType == types.MediaTypeTV {
 				destPath = filepath.Join(tmpDir, "Show", "Season 01", "test.mkv")
 			}
-			
+
 			plan := Plan{
 				SourcePath:      filepath.Join(tmpDir, "source.mkv"),
 				DestinationPath: destPath,
@@ -607,7 +607,7 @@ func TestDownloadArtworkForPlan_Disabled(t *testing.T) {
 	tmpDir := t.TempDir()
 	o := NewOrganizer(false)
 	// Don't enable artwork downloads
-	
+
 	plan := Plan{
 		SourcePath:      filepath.Join(tmpDir, "source.mkv"),
 		DestinationPath: filepath.Join(tmpDir, "dest.mkv"),
@@ -632,4 +632,3 @@ func TestDownloadArtworkForPlan_Disabled(t *testing.T) {
 		t.Errorf("downloadArtworkForPlan() got %d operations, want 0", len(ops))
 	}
 }
-

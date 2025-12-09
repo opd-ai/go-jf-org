@@ -19,8 +19,8 @@ const (
 	DefaultTimeout = 10 * time.Second
 
 	// Default cache TTL in seconds
-	CacheTTLSuccess = 86400 // 24 hours
-	CacheTTLNotFound = 3600 // 1 hour
+	CacheTTLSuccess  = 86400 // 24 hours
+	CacheTTLNotFound = 3600  // 1 hour
 
 	// UserAgent for MusicBrainz API (required)
 	UserAgent = "go-jf-org/1.0 (https://github.com/opd-ai/go-jf-org)"
@@ -139,7 +139,7 @@ func (c *Client) get(endpoint string, params url.Values) ([]byte, error) {
 // SearchRelease searches for releases (albums) by title and artist
 func (c *Client) SearchRelease(title string, artist string) (*SearchReleaseResponse, error) {
 	params := url.Values{}
-	
+
 	// Build Lucene query
 	query := ""
 	if title != "" {
@@ -151,11 +151,11 @@ func (c *Client) SearchRelease(title string, artist string) (*SearchReleaseRespo
 		}
 		query += fmt.Sprintf("artist:\"%s\"", artist)
 	}
-	
+
 	if query == "" {
 		return nil, fmt.Errorf("title or artist is required")
 	}
-	
+
 	params.Set("query", query)
 	params.Set("limit", "5") // Limit results
 

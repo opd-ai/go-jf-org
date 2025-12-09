@@ -423,7 +423,7 @@ func TestAPIErrorHandling(t *testing.T) {
 
 func TestCacheWithRealDirectory(t *testing.T) {
 	tmpCacheDir := t.TempDir()
-	
+
 	cache, err := NewCache(tmpCacheDir)
 	if err != nil {
 		t.Fatalf("NewCache() with temp dir error = %v", err)

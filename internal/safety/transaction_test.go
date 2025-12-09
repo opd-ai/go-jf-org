@@ -263,11 +263,11 @@ func TestList(t *testing.T) {
 func TestTransactionPersistence(t *testing.T) {
 	tmpDir := t.TempDir()
 	logDir := filepath.Join(tmpDir, "txn")
-	
+
 	// Create and save transaction
 	tm1, _ := NewTransactionManager(logDir)
 	txn, _ := tm1.Begin()
-	
+
 	op := types.Operation{
 		Type:        types.OperationMove,
 		Source:      "/test/file.mkv",
@@ -315,7 +315,7 @@ func TestGetDefaultLogDir(t *testing.T) {
 	if !filepath.IsAbs(dir) {
 		t.Error("Default log dir should be absolute path")
 	}
-	
+
 	// Verify it ends with the expected path
 	if !strings.HasSuffix(dir, filepath.Join(".go-jf-org", "txn")) {
 		t.Logf("Default log dir: %s", dir)
@@ -333,37 +333,37 @@ func TestConcurrentTransactions(t *testing.T) {
 		err error
 	}
 	results := make(chan result, 5)
-	
+
 	for i := 0; i < 5; i++ {
 		go func() {
 			var res result
-			
+
 			txn, err := tm.Begin()
 			if err != nil {
 				res.err = fmt.Errorf("failed to begin transaction: %w", err)
 				results <- res
 				return
 			}
-			
+
 			op := types.Operation{
 				Type:        types.OperationMove,
 				Source:      "/test/source.mkv",
 				Destination: "/test/dest.mkv",
 				Status:      types.OperationStatusPending,
 			}
-			
+
 			if err := tm.AddOperation(txn, op); err != nil {
 				res.err = fmt.Errorf("failed to add operation: %w", err)
 				results <- res
 				return
 			}
-			
+
 			if err := tm.Complete(txn); err != nil {
 				res.err = fmt.Errorf("failed to complete transaction: %w", err)
 				results <- res
 				return
 			}
-			
+
 			results <- res
 		}()
 	}
@@ -390,10 +390,10 @@ func TestTransactionTimestamps(t *testing.T) {
 
 	before := time.Now()
 	txn, _ := tm.Begin()
-	
+
 	// Small delay to ensure timestamps differ
 	time.Sleep(10 * time.Millisecond)
-	
+
 	tm.Complete(txn)
 	after := time.Now()
 

@@ -20,8 +20,8 @@ const (
 	DefaultTimeout = 10 * time.Second
 
 	// Default cache TTL in seconds
-	CacheTTLSuccess = 86400 // 24 hours
-	CacheTTLNotFound = 3600 // 1 hour
+	CacheTTLSuccess  = 86400 // 24 hours
+	CacheTTLNotFound = 3600  // 1 hour
 
 	// UserAgent for OpenLibrary API
 	UserAgent = "go-jf-org/1.0 (https://github.com/opd-ai/go-jf-org)"
@@ -134,7 +134,7 @@ func (c *Client) Search(title string, author string) (*SearchResponse, error) {
 	}
 
 	params := url.Values{}
-	
+
 	// Build query
 	var queryParts []string
 	if title != "" {

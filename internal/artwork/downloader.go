@@ -97,7 +97,7 @@ func (d *BaseDownloader) DownloadImage(ctx context.Context, imageURL, destPath s
 				Int("attempt", attempt+1).
 				Dur("delay", delay).
 				Msg("Retrying artwork download after delay")
-			
+
 			select {
 			case <-time.After(delay):
 			case <-ctx.Done():

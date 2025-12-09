@@ -14,12 +14,12 @@ import (
 
 // Transaction represents a set of file operations that can be rolled back
 type Transaction struct {
-	ID         string               `json:"id"`
-	Timestamp  time.Time            `json:"timestamp"`
-	Operations []types.Operation    `json:"operations"`
-	Status     TransactionStatus    `json:"status"`
-	Completed  time.Time            `json:"completed,omitempty"`
-	Error      string               `json:"error,omitempty"`
+	ID         string            `json:"id"`
+	Timestamp  time.Time         `json:"timestamp"`
+	Operations []types.Operation `json:"operations"`
+	Status     TransactionStatus `json:"status"`
+	Completed  time.Time         `json:"completed,omitempty"`
+	Error      string            `json:"error,omitempty"`
 }
 
 // TransactionStatus represents the status of a transaction
@@ -121,7 +121,7 @@ func (tm *TransactionManager) MarkRolledBack(txn *Transaction) error {
 // Load loads a transaction by ID
 func (tm *TransactionManager) Load(id string) (*Transaction, error) {
 	path := tm.getLogPath(id)
-	
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {

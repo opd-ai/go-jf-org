@@ -69,6 +69,7 @@ func (o *Organizer) SetCreateNFO(create bool) {
 // SetDownloadArtwork enables or disables artwork downloads
 func (o *Organizer) SetDownloadArtwork(download bool, size artwork.ImageSize) {
 	o.downloadArtwork = download
+	// Only update size if provided (allows keeping existing size)
 	if size != "" {
 		o.artworkSize = size
 	}
@@ -111,7 +112,7 @@ func (o *Organizer) PlanOrganization(files []string, destRoot string, mediaTypeF
 			log.Warn().Err(err).Str("file", file).Msg("Failed to parse metadata, skipping")
 			continue
 		}
-		
+
 		// Defensive nil check - ensures safety even if parsers change in the future
 		if meta == nil {
 			log.Warn().Str("file", file).Msg("Parser returned nil metadata, skipping")
@@ -183,7 +184,7 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("[DRY-RUN] Would move file")
 			op.Status = types.OperationStatusCompleted
 			operations = append(operations, op)
-			
+
 			// Show NFO files that would be created
 			nfoOps, err := o.createNFOFiles(plan)
 			if err != nil {
@@ -191,7 +192,7 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 			} else if len(nfoOps) > 0 {
 				operations = append(operations, nfoOps...)
 			}
-			
+
 			// Show artwork that would be downloaded
 			artworkOps, err := o.downloadArtworkForPlan(context.Background(), plan)
 			if err != nil {
@@ -199,7 +200,7 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 			} else if len(artworkOps) > 0 {
 				operations = append(operations, artworkOps...)
 			}
-			
+
 			continue
 		}
 
@@ -224,7 +225,7 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 		} else {
 			op.Status = types.OperationStatusCompleted
 			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("File moved successfully")
-			
+
 			// Create NFO files after successful move
 			nfoOps, err := o.createNFOFiles(plan)
 			if err != nil {
@@ -232,7 +233,7 @@ func (o *Organizer) Execute(plans []Plan, conflictStrategy string) ([]types.Oper
 			} else if len(nfoOps) > 0 {
 				operations = append(operations, nfoOps...)
 			}
-			
+
 			// Download artwork after successful move
 			artworkOps, err := o.downloadArtworkForPlan(context.Background(), plan)
 			if err != nil {
@@ -303,7 +304,7 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 			txnIndex := len(txn.Operations)
 			o.transactionMgr.AddOperation(txn, op)
 			operationIndices[len(operations)-1] = txnIndex
-			
+
 			// Show NFO files that would be created
 			nfoOps, err := o.createNFOFiles(plan)
 			if err != nil {
@@ -314,7 +315,7 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 					operations = append(operations, nfoOp)
 				}
 			}
-			
+
 			// Show artwork that would be downloaded
 			artworkOps, err := o.downloadArtworkForPlan(context.Background(), plan)
 			if err != nil {
@@ -325,14 +326,14 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 					operations = append(operations, artworkOp)
 				}
 			}
-			
+
 			continue
 		}
 
 		// Log operation before executing
 		txnIndex := len(txn.Operations)
 		o.transactionMgr.AddOperation(txn, op)
-		currentOpIndex := len(operations)  // Save the index BEFORE adding any operations
+		currentOpIndex := len(operations) // Save the index BEFORE adding any operations
 		operationIndices[currentOpIndex] = txnIndex
 
 		// Create destination directory
@@ -358,7 +359,7 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 		} else {
 			op.Status = types.OperationStatusCompleted
 			log.Info().Str("source", op.Source).Str("dest", op.Destination).Msg("File moved successfully")
-			
+
 			// Create NFO files after successful move
 			nfoOps, err := o.createNFOFiles(plan)
 			if err != nil {
@@ -369,7 +370,7 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 					operations = append(operations, nfoOp)
 				}
 			}
-			
+
 			// Download artwork after successful move
 			artworkOps, err := o.downloadArtworkForPlan(context.Background(), plan)
 			if err != nil {
@@ -384,7 +385,7 @@ func (o *Organizer) ExecuteWithTransaction(plans []Plan, conflictStrategy string
 
 		// Update operation status in transaction using saved index
 		o.transactionMgr.UpdateOperation(txn, txnIndex, op)
-		
+
 		operations = append(operations, op)
 	}
 
@@ -424,7 +425,7 @@ func findAvailableName(path string) (string, error) {
 // This helper function reduces code duplication for movie, music, and book NFO creation
 func (o *Organizer) createSimpleNFOFile(destDir, filename, mediaType string, content string) types.Operation {
 	nfoPath := filepath.Join(destDir, filename)
-	
+
 	op := types.Operation{
 		Type:        types.OperationCreateFile,
 		Source:      "",
@@ -474,11 +475,11 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 		}
 
 		tv := plan.Metadata.TVMetadata
-		
+
 		// Create tvshow.nfo in the show directory (parent of season directory)
 		showDir := filepath.Dir(destDir)
 		tvshowNFOPath := filepath.Join(showDir, "tvshow.nfo")
-		
+
 		// Check if tvshow.nfo already exists (multiple episodes share same show)
 		if _, err := os.Stat(tvshowNFOPath); err == nil {
 			// File exists, skip creation
@@ -518,7 +519,7 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 
 		// Create season.nfo in the season directory
 		seasonNFOPath := filepath.Join(destDir, "season.nfo")
-		
+
 		// Check if season.nfo already exists (multiple episodes share same season)
 		if _, err := os.Stat(seasonNFOPath); err == nil {
 			// File exists, skip creation
@@ -555,7 +556,7 @@ func (o *Organizer) createNFOFiles(plan Plan) ([]types.Operation, error) {
 
 			operations = append(operations, op)
 		}
-	
+
 	case types.MediaTypeMusic:
 		// Create album.nfo in the album directory
 		content, err := o.nfoGenerator.GenerateMusicAlbumNFO(plan.Metadata)
@@ -599,7 +600,7 @@ func (o *Organizer) ValidatePlan(plans []Plan) []error {
 
 		// Check destination directory would be writable
 		destDir := filepath.Dir(plan.DestinationPath)
-		
+
 		// Check if parent exists
 		parentInfo, err := os.Stat(filepath.Dir(destDir))
 		if err != nil && !os.IsNotExist(err) {
@@ -638,7 +639,7 @@ func (o *Organizer) downloadArtworkForPlan(ctx context.Context, plan Plan) ([]ty
 		}
 
 		downloader := artwork.NewTMDBDownloader(artworkConfig, o.artworkSize)
-		
+
 		// Download poster
 		if plan.Metadata.MovieMetadata.PosterURL != "" {
 			posterPath := filepath.Join(destDir, "poster.jpg")
@@ -703,14 +704,14 @@ func (o *Organizer) downloadArtworkForPlan(ctx context.Context, plan Plan) ([]ty
 		}
 
 		downloader := artwork.NewTMDBDownloader(artworkConfig, o.artworkSize)
-		
+
 		// Download TV show poster (to show directory)
 		if plan.Metadata.TVMetadata.PosterURL != "" {
 			// Extract show directory (parent of season directory)
 			seasonDir := filepath.Dir(plan.DestinationPath)
 			showDir := filepath.Dir(seasonDir)
 			posterPath := filepath.Join(showDir, "poster.jpg")
-			
+
 			if o.dryRun {
 				log.Info().Str("dest", posterPath).Msg("[DRY-RUN] Would download TV show poster")
 				operations = append(operations, types.Operation{
@@ -746,7 +747,7 @@ func (o *Organizer) downloadArtworkForPlan(ctx context.Context, plan Plan) ([]ty
 		}
 
 		downloader := artwork.NewCoverArtDownloader(artworkConfig, o.artworkSize)
-		
+
 		// Download album cover
 		if plan.Metadata.MusicMetadata.MusicBrainzRID != "" {
 			coverPath := filepath.Join(destDir, "cover.jpg")
@@ -782,7 +783,7 @@ func (o *Organizer) downloadArtworkForPlan(ctx context.Context, plan Plan) ([]ty
 		}
 
 		downloader := artwork.NewOpenLibraryDownloader(artworkConfig, o.artworkSize)
-		
+
 		// Download book cover (prefer ISBN)
 		coverPath := filepath.Join(destDir, "cover.jpg")
 		if plan.Metadata.BookMetadata.ISBN != "" {

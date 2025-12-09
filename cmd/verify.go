@@ -90,12 +90,12 @@ func runVerify(cmd *cobra.Command, args []string) error {
 // outputJSON outputs results in JSON format
 func outputJSON(result *verifier.Result) error {
 	output := struct {
-		Path         string                       `json:"path"`
-		CheckedDirs  int                          `json:"checked_directories"`
-		ErrorCount   int                          `json:"error_count"`
-		WarningCount int                          `json:"warning_count"`
-		MediaCounts  map[types.MediaType]int      `json:"media_counts"`
-		Violations   []verifier.Violation         `json:"violations"`
+		Path         string                  `json:"path"`
+		CheckedDirs  int                     `json:"checked_directories"`
+		ErrorCount   int                     `json:"error_count"`
+		WarningCount int                     `json:"warning_count"`
+		MediaCounts  map[types.MediaType]int `json:"media_counts"`
+		Violations   []verifier.Violation    `json:"violations"`
 	}{
 		Path:         result.Path,
 		CheckedDirs:  result.CheckedDirs,

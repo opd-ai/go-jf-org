@@ -11,41 +11,41 @@ type SearchReleaseResponse struct {
 
 // Release represents a MusicBrainz release (album)
 type Release struct {
-	ID             string         `json:"id"`
-	Title          string         `json:"title"`
-	Status         string         `json:"status"`
-	Date           string         `json:"date"`
-	Country        string         `json:"country"`
-	Score          int            `json:"score"`
-	ArtistCredit   []ArtistCredit `json:"artist-credit"`
-	ReleaseGroup   ReleaseGroup   `json:"release-group"`
-	LabelInfo      []LabelInfo    `json:"label-info"`
-	Barcode        string         `json:"barcode"`
-	MediaCount     int            `json:"media-count"`
-	TrackCount     int            `json:"track-count"`
+	ID           string         `json:"id"`
+	Title        string         `json:"title"`
+	Status       string         `json:"status"`
+	Date         string         `json:"date"`
+	Country      string         `json:"country"`
+	Score        int            `json:"score"`
+	ArtistCredit []ArtistCredit `json:"artist-credit"`
+	ReleaseGroup ReleaseGroup   `json:"release-group"`
+	LabelInfo    []LabelInfo    `json:"label-info"`
+	Barcode      string         `json:"barcode"`
+	MediaCount   int            `json:"media-count"`
+	TrackCount   int            `json:"track-count"`
 }
 
 // ReleaseDetails represents detailed release information
 type ReleaseDetails struct {
-	ID             string         `json:"id"`
-	Title          string         `json:"title"`
-	Status         string         `json:"status"`
-	Date           string         `json:"date"`
-	Country        string         `json:"country"`
-	Barcode        string         `json:"barcode"`
-	ArtistCredit   []ArtistCredit `json:"artist-credit"`
-	ReleaseGroup   ReleaseGroup   `json:"release-group"`
-	LabelInfo      []LabelInfo    `json:"label-info"`
-	Media          []Media        `json:"media"`
+	ID           string         `json:"id"`
+	Title        string         `json:"title"`
+	Status       string         `json:"status"`
+	Date         string         `json:"date"`
+	Country      string         `json:"country"`
+	Barcode      string         `json:"barcode"`
+	ArtistCredit []ArtistCredit `json:"artist-credit"`
+	ReleaseGroup ReleaseGroup   `json:"release-group"`
+	LabelInfo    []LabelInfo    `json:"label-info"`
+	Media        []Media        `json:"media"`
 }
 
 // ReleaseGroup represents a group of releases
 type ReleaseGroup struct {
-	ID             string   `json:"id"`
-	Title          string   `json:"title"`
-	PrimaryType    string   `json:"primary-type"`
-	SecondaryTypes []string `json:"secondary-types"`
-	FirstReleaseDate string `json:"first-release-date"`
+	ID               string   `json:"id"`
+	Title            string   `json:"title"`
+	PrimaryType      string   `json:"primary-type"`
+	SecondaryTypes   []string `json:"secondary-types"`
+	FirstReleaseDate string   `json:"first-release-date"`
 }
 
 // ArtistCredit represents an artist credit
@@ -109,12 +109,12 @@ type SearchArtistResponse struct {
 
 // ArtistDetails represents detailed artist information
 type ArtistDetails struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	SortName string `json:"sort-name"`
-	Type     string `json:"type"`
-	Country  string `json:"country"`
-	Gender   string `json:"gender"`
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	SortName string  `json:"sort-name"`
+	Type     string  `json:"type"`
+	Country  string  `json:"country"`
+	Gender   string  `json:"gender"`
 	Aliases  []Alias `json:"aliases"`
 }
 
@@ -134,6 +134,6 @@ type CachedResponse struct {
 
 // ErrorResponse represents a MusicBrainz API error
 type ErrorResponse struct {
-	Error   string `json:"error"`
-	Help    string `json:"help"`
+	Error string `json:"error"`
+	Help  string `json:"help"`
 }

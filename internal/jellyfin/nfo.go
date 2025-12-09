@@ -64,15 +64,15 @@ type SeasonNFO struct {
 
 // MusicAlbumNFO represents the XML structure for a music album NFO file
 type MusicAlbumNFO struct {
-	XMLName           xml.Name `xml:"album"`
-	Title             string   `xml:"title,omitempty"`
-	Artist            string   `xml:"artist,omitempty"`
-	AlbumArtist       string   `xml:"albumartist,omitempty"`
-	Year              int      `xml:"year,omitempty"`
-	Genre             string   `xml:"genre,omitempty"`
-	Review            string   `xml:"review,omitempty"`
-	MusicBrainzID     string   `xml:"musicbrainzalbumid,omitempty"`
-	MusicBrainzReleaseID string `xml:"musicbrainzreleasegroupid,omitempty"`
+	XMLName              xml.Name `xml:"album"`
+	Title                string   `xml:"title,omitempty"`
+	Artist               string   `xml:"artist,omitempty"`
+	AlbumArtist          string   `xml:"albumartist,omitempty"`
+	Year                 int      `xml:"year,omitempty"`
+	Genre                string   `xml:"genre,omitempty"`
+	Review               string   `xml:"review,omitempty"`
+	MusicBrainzID        string   `xml:"musicbrainzalbumid,omitempty"`
+	MusicBrainzReleaseID string   `xml:"musicbrainzreleasegroupid,omitempty"`
 }
 
 // BookNFO represents the XML structure for a book NFO file
@@ -109,23 +109,23 @@ func (g *NFOGenerator) GenerateMovieNFO(metadata *types.Metadata) (string, error
 	// Add movie-specific metadata if available
 	if metadata.MovieMetadata != nil {
 		mm := metadata.MovieMetadata
-		
+
 		if mm.OriginalTitle != "" {
 			nfo.OriginalTitle = mm.OriginalTitle
 		}
-		
+
 		nfo.Plot = mm.Plot
 		nfo.TMDBID = mm.TMDBID
 		nfo.IMDBID = mm.IMDBID
-		
+
 		for _, genre := range mm.Genres {
 			nfo.Genres = append(nfo.Genres, genre)
 		}
-		
+
 		for _, director := range mm.Director {
 			nfo.Directors = append(nfo.Directors, director)
 		}
-		
+
 		for _, cast := range mm.Cast {
 			nfo.Actors = append(nfo.Actors, Actor{
 				Name: cast,
@@ -147,7 +147,7 @@ func (g *NFOGenerator) GenerateTVShowNFO(metadata *types.Metadata) (string, erro
 	}
 
 	tm := metadata.TVMetadata
-	
+
 	nfo := TVShowNFO{
 		Title: tm.ShowTitle,
 		Plot:  tm.Plot,
@@ -175,7 +175,7 @@ func (g *NFOGenerator) GenerateEpisodeNFO(metadata *types.Metadata) (string, err
 	}
 
 	tm := metadata.TVMetadata
-	
+
 	nfo := EpisodeNFO{
 		Title:   tm.EpisodeTitle,
 		Season:  tm.Season,
@@ -214,19 +214,19 @@ func (g *NFOGenerator) GenerateMusicAlbumNFO(metadata *types.Metadata) (string, 
 	// Add music-specific metadata if available
 	if metadata.MusicMetadata != nil {
 		mm := metadata.MusicMetadata
-		
+
 		nfo.Artist = mm.Artist
 		nfo.AlbumArtist = mm.AlbumArtist
-		
+
 		// Use AlbumArtist if set, otherwise fall back to Artist
 		if nfo.AlbumArtist == "" && nfo.Artist != "" {
 			nfo.AlbumArtist = nfo.Artist
 		}
-		
+
 		nfo.Genre = mm.Genre
 		nfo.MusicBrainzID = mm.MusicBrainzID
 		nfo.MusicBrainzReleaseID = mm.MusicBrainzRID
-		
+
 		// Use Album as title if Title is empty
 		if nfo.Title == "" && mm.Album != "" {
 			nfo.Title = mm.Album
@@ -250,7 +250,7 @@ func (g *NFOGenerator) GenerateBookNFO(metadata *types.Metadata) (string, error)
 	// Add book-specific metadata if available
 	if metadata.BookMetadata != nil {
 		bm := metadata.BookMetadata
-		
+
 		nfo.Author = bm.Author
 		nfo.Publisher = bm.Publisher
 		nfo.ISBN = bm.ISBN

@@ -464,10 +464,10 @@ func TestVerifier_VerifyPath(t *testing.T) {
 // TestVerifier_InferMediaType tests media type inference
 func TestVerifier_InferMediaType(t *testing.T) {
 	tests := []struct {
-		name          string
-		dirName       string
-		setupFunc     func(string) error
-		expectedType  types.MediaType
+		name         string
+		dirName      string
+		setupFunc    func(string) error
+		expectedType types.MediaType
 	}{
 		{
 			name:    "infer movie from year pattern",

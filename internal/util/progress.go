@@ -203,7 +203,7 @@ func (s *Spinner) Stop() {
 	}
 
 	s.running = false
-	
+
 	// Use sync.Once to ensure channel is closed exactly once
 	// This prevents race conditions when Stop() is called concurrently
 	s.stopOnce.Do(func() {

@@ -9,11 +9,11 @@ import (
 
 // Statistics tracks operation statistics and metrics
 type Statistics struct {
-	StartTime time.Time              `json:"start_time"`
-	EndTime   time.Time              `json:"end_time"`
-	Duration  time.Duration          `json:"duration_ms"`
-	Counters  map[string]int         `json:"counters"`
-	Sizes     map[string]int64       `json:"sizes_bytes"`
+	StartTime time.Time                `json:"start_time"`
+	EndTime   time.Time                `json:"end_time"`
+	Duration  time.Duration            `json:"duration_ms"`
+	Counters  map[string]int           `json:"counters"`
+	Sizes     map[string]int64         `json:"sizes_bytes"`
 	Timings   map[string]time.Duration `json:"timings_ms"`
 	mu        sync.RWMutex
 }
@@ -90,12 +90,12 @@ func (s *Statistics) ToJSON() (string, error) {
 
 	// Convert to JSON-friendly format
 	data := struct {
-		StartTime string                    `json:"start_time"`
-		EndTime   string                    `json:"end_time"`
-		Duration  int64                     `json:"duration_ms"`
-		Counters  map[string]int            `json:"counters"`
-		Sizes     map[string]int64          `json:"sizes_bytes"`
-		Timings   map[string]int64          `json:"timings_ms"`
+		StartTime string           `json:"start_time"`
+		EndTime   string           `json:"end_time"`
+		Duration  int64            `json:"duration_ms"`
+		Counters  map[string]int   `json:"counters"`
+		Sizes     map[string]int64 `json:"sizes_bytes"`
+		Timings   map[string]int64 `json:"timings_ms"`
 	}{
 		StartTime: s.StartTime.Format(time.RFC3339),
 		EndTime:   s.EndTime.Format(time.RFC3339),
@@ -196,15 +196,15 @@ func (t *Timer) Stop() {
 
 // OperationStats tracks statistics for a specific operation
 type OperationStats struct {
-	Name      string
-	Total     int
-	Completed int
-	Failed    int
-	Skipped   int
+	Name           string
+	Total          int
+	Completed      int
+	Failed         int
+	Skipped        int
 	BytesProcessed int64
-	StartTime time.Time
-	EndTime   time.Time
-	mu        sync.RWMutex
+	StartTime      time.Time
+	EndTime        time.Time
+	mu             sync.RWMutex
 }
 
 // NewOperationStats creates a new operation statistics tracker
@@ -265,7 +265,7 @@ func (os *OperationStats) Duration() time.Duration {
 func (os *OperationStats) Summary() string {
 	os.mu.RLock()
 	defer os.mu.RUnlock()
-	
+
 	// Calculate duration inline to avoid nested locking
 	var duration time.Duration
 	if os.EndTime.IsZero() {
@@ -273,7 +273,7 @@ func (os *OperationStats) Summary() string {
 	} else {
 		duration = os.EndTime.Sub(os.StartTime)
 	}
-	
+
 	summary := fmt.Sprintf("%s Statistics:\n", os.Name)
 	summary += fmt.Sprintf("  Total: %d\n", os.Total)
 	summary += fmt.Sprintf("  Completed: %d\n", os.Completed)
@@ -284,16 +284,16 @@ func (os *OperationStats) Summary() string {
 		summary += fmt.Sprintf("  Skipped: %d\n", os.Skipped)
 	}
 	summary += fmt.Sprintf("  Duration: %s\n", FormatDuration(duration))
-	
+
 	if os.BytesProcessed > 0 {
 		summary += fmt.Sprintf("  Data Processed: %s\n", FormatBytes(os.BytesProcessed))
 	}
-	
+
 	if duration > 0 && os.Completed > 0 {
 		rate := float64(os.Completed) / duration.Seconds()
 		summary += fmt.Sprintf("  Rate: %.2f items/sec\n", rate)
 	}
-	
+
 	return summary
 }
 
@@ -303,13 +303,13 @@ func FormatBytes(bytes int64) string {
 	if bytes < unit {
 		return fmt.Sprintf("%d B", bytes)
 	}
-	
+
 	div, exp := int64(unit), 0
 	for n := bytes / unit; n >= unit; n /= unit {
 		div *= unit
 		exp++
 	}
-	
+
 	// Extended to support larger units (EB, ZB, YB)
 	units := []string{"KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"}
 	// Bounds check to prevent panic - caps at YB (yottabyte)

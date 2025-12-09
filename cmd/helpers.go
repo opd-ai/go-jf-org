@@ -17,7 +17,7 @@ func getDestinationRoot(mediaType string, dest string) (string, error) {
 	if dest != "" {
 		return dest, nil
 	}
-	
+
 	// Try to get from config based on media type
 	if mediaType == "movie" && cfg.Destinations.Movies != "" {
 		return cfg.Destinations.Movies, nil
@@ -28,7 +28,7 @@ func getDestinationRoot(mediaType string, dest string) (string, error) {
 	} else if mediaType == "book" && cfg.Destinations.Books != "" {
 		return cfg.Destinations.Books, nil
 	}
-	
+
 	return "", fmt.Errorf("destination directory required (use --dest or configure in config file)")
 }
 
@@ -37,7 +37,7 @@ func parseMediaTypeFilter(mediaType string) (types.MediaType, error) {
 	if mediaType == "" {
 		return types.MediaTypeUnknown, nil
 	}
-	
+
 	switch mediaType {
 	case "movie":
 		return types.MediaTypeMovie, nil
@@ -84,13 +84,13 @@ func promptConflictResolutionWithReader(sourcePath, destPath string, reader io.R
 	fmt.Println("  [r] Rename - Add suffix to filename (e.g., file-1.mkv)")
 	fmt.Println("  [a] Skip all - Skip this and all remaining conflicts")
 	fmt.Print("\nYour choice [s/r/a]: ")
-	
+
 	bufReader := bufio.NewReader(reader)
 	input, err := bufReader.ReadString('\n')
 	if err != nil {
 		return "skip"
 	}
-	
+
 	choice := strings.ToLower(strings.TrimSpace(input))
 	switch choice {
 	case "r", "rename":
@@ -101,4 +101,3 @@ func promptConflictResolutionWithReader(sourcePath, destPath string, reader io.R
 		return "skip"
 	}
 }
-

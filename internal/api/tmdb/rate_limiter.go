@@ -8,11 +8,11 @@ import (
 // RateLimiter implements a token bucket rate limiter for TMDB API
 // TMDB allows 40 requests per 10 seconds
 type RateLimiter struct {
-	tokens   int
-	capacity int
-	refill   int           // tokens to add per interval
-	interval time.Duration // refill interval
-	mu       sync.Mutex
+	tokens     int
+	capacity   int
+	refill     int           // tokens to add per interval
+	interval   time.Duration // refill interval
+	mu         sync.Mutex
 	lastRefill time.Time
 }
 
@@ -55,18 +55,18 @@ func (rl *RateLimiter) Wait() {
 	for {
 		rl.mu.Lock()
 		rl.refillTokens()
-		
+
 		if rl.tokens > 0 {
 			rl.tokens--
 			rl.mu.Unlock()
 			return
 		}
-		
+
 		// Calculate time until next refill while holding the lock
 		timeSinceRefill := time.Since(rl.lastRefill)
 		timeUntilRefill := rl.interval - timeSinceRefill
 		rl.mu.Unlock()
-		
+
 		// Wait for next refill or minimum time
 		if timeUntilRefill > 0 {
 			time.Sleep(timeUntilRefill)

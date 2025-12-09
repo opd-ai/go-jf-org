@@ -251,7 +251,7 @@ func TestRollbackAlreadyRolledBack(t *testing.T) {
 
 	txn, _ := tm.Begin()
 	tm.Complete(txn)
-	
+
 	// First rollback
 	tm.Rollback(txn.ID)
 
